@@ -1,33 +1,40 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import NotFound from "./views/notFound.jsx";
+import AdminUser from "./views/admin/adminUser.jsx";
+import AdminDepartement from "./views/admin/adminDepartement.jsx";
+import AdminSetting from "./views/admin/adminSetting.jsx";
+import AdminLogin from "./views/admin/adminLogin.jsx";
+import AuthGard from "./auth/authGard.jsx";
+import AdminLayout from "./auth/adminLayout.jsx";
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [role, setRole] = useState("admin");
+    const [isAuth, setIsAuth] = useState(true);
+    if (role === "admin" && isAuth) {
+        return (
+                <Router>
+                    <Routes>
+                        {/* PUBLIC */}
+                        <Route path={'/admin/login'} element={<AdminLogin/>}/>
+                        <Route path="*" element={<NotFound />} />
+
+
+                        {/* PRIVATE */}
+
+                        <Route path={'/admin'} element={<AuthGard isAuth={isAuth}><AdminLayout/></AuthGard>}>
+                            <Route path={'departements'} element={<AdminDepartement/>} />
+                            <Route path={'utilisateurs'} element={<AdminUser/>}/>
+                            <Route path={'parametre'} element={<AdminSetting/>}/>
+                        </Route>
+                    </Routes>
+                </Router>
+        )
+    }
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
