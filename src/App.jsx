@@ -7,6 +7,8 @@ import MainLayout from './components/layout/MainLayout';
 
 // Lazy loaded pages
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const PendingPage = lazy(() => import('./pages/auth/PendingPage'));
 const DashboardPage = lazy(() => import('./pages/shared/DashboardPage'));
 const ProfilePage = lazy(() => import('./pages/shared/ProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/shared/NotFoundPage'));
@@ -50,6 +52,8 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/pending" element={<PendingPage />} />
 
           {/* Protected */}
           <Route element={<AuthGuard />}>

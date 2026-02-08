@@ -49,7 +49,7 @@ const menuItems = {
   ],
   chef: [
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
-    { label: 'Delegues', path: '/chef/delegues', icon: <DeleguesIcon /> },
+    { label: 'Demandes', path: '/chef/delegues', icon: <DeleguesIcon /> },
     { label: 'Utilisateurs', path: '/chef/utilisateurs', icon: <PeopleIcon /> },
     { label: 'Fiches', path: '/chef/fiches', icon: <FichesIcon /> },
     { label: 'Export', path: '/chef/export', icon: <ExportIcon /> },
