@@ -88,13 +88,20 @@ function SidebarContent({ onClose }) {
   const { isAdmin, isChef, isEnseignant, isDelegue, roles } = useRoles();
   const [openSub, setOpenSub] = useState(true);
 
-  const items = isAdmin
-    ? menuItems.admin
-    : isChef
-      ? menuItems.chef
-      : isDelegue
-        ? menuItems.delegue
-        : menuItems.enseignant;
+  let items;
+  if (isAdmin) {
+    items = menuItems.admin;
+  } else if (isChef) {
+    items = [...menuItems.chef];
+    // Chef + Enseignant : ajouter "Mes Fiches" après le Dashboard
+    if (isEnseignant) {
+      items.splice(1, 0, { label: 'Mes Fiches', path: '/fiches', icon: <FichesIcon /> });
+    }
+  } else if (isDelegue) {
+    items = menuItems.delegue;
+  } else {
+    items = menuItems.enseignant;
+  }
   const mainRole = roles[0] || '';
   const roleColor = roleColors[mainRole] || '#7E7E7E';
 

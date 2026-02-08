@@ -84,7 +84,8 @@ export default function AdminUsersPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const data = { ...form };
+      const { roles, ...rest } = form;
+      const data = { ...rest, roles_ids: roles };
       if (!data.password) delete data.password;
       if (editing) {
         await usersService.update(editing.id, data);
