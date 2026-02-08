@@ -27,13 +27,37 @@ export const authService = {
 export const dashboardService = {
   getRoot: () => api.get('/dashboard/'),
   getStats: () => api.get('/dashboard/stats/'),
+  getRecapitulatif: (dateDebut, dateFin) => {
+    const params = new URLSearchParams();
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    return api.get(`/dashboard/recapitulatif/?${params.toString()}`);
+  },
+  exportBilan: (dateDebut, dateFin) => {
+    const params = new URLSearchParams();
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    return api.get(`/dashboard/export-bilan/?${params.toString()}`, { responseType: 'blob' });
+  },
+  exportParUE: (dateDebut, dateFin, ueId) => {
+    const params = new URLSearchParams();
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    if (ueId) params.append('ue', ueId);
+    return api.get(`/dashboard/export-par-ue/?${params.toString()}`, { responseType: 'blob' });
+  },
+  exportParEnseignant: (dateDebut, dateFin, enseignantId) => {
+    const params = new URLSearchParams();
+    if (dateDebut) params.append('date_debut', dateDebut);
+    if (dateFin) params.append('date_fin', dateFin);
+    if (enseignantId) params.append('enseignant', enseignantId);
+    return api.get(`/dashboard/export-par-enseignant/?${params.toString()}`, { responseType: 'blob' });
+  },
   exportHeures: (annee, mois) => {
     const params = new URLSearchParams();
     if (annee) params.append('annee', annee.toString());
     if (mois) params.append('mois', mois.toString());
-    return api.get(`/dashboard/export-heures/?${params.toString()}`, {
-      responseType: 'blob',
-    });
+    return api.get(`/dashboard/export-heures/?${params.toString()}`, { responseType: 'blob' });
   },
 };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -9,51 +9,113 @@ import {
   Typography,
   MenuItem,
   CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tabs,
+  Tab,
+  Divider,
+  Chip,
 } from '@mui/material';
-import { FileDownload } from '@mui/icons-material';
+import {
+  FileDownload,
+  Assessment,
+  MenuBook as UEIcon,
+  Person as PersonIcon,
+  ListAlt,
+} from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
-import { dashboardService } from '../../api/services';
+import { dashboardService, unitesEnseignementService, usersService } from '../../api/services';
 import toast from 'react-hot-toast';
 
-const months = [
-  { value: 1, label: 'Janvier' },
-  { value: 2, label: 'Fevrier' },
-  { value: 3, label: 'Mars' },
-  { value: 4, label: 'Avril' },
-  { value: 5, label: 'Mai' },
-  { value: 6, label: 'Juin' },
-  { value: 7, label: 'Juillet' },
-  { value: 8, label: 'Aout' },
-  { value: 9, label: 'Septembre' },
-  { value: 10, label: 'Octobre' },
-  { value: 11, label: 'Novembre' },
-  { value: 12, label: 'Decembre' },
-];
-
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
+function downloadBlob(res, fallbackName) {
+  const disposition = res.headers?.['content-disposition'] || '';
+  const match = disposition.match(/filename="?(.+?)"?$/);
+  const filename = match ? match[1] : fallbackName;
+  const blob = new Blob([res.data], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 
 export default function ExportPage() {
-  const [mois, setMois] = useState(new Date().getMonth() + 1);
-  const [annee, setAnnee] = useState(currentYear);
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [recap, setRecap] = useState(null);
+  const [recapLoading, setRecapLoading] = useState(false);
 
-  const handleExport = async () => {
+  // Pour les exports filtres
+  const [ues, setUes] = useState([]);
+  const [enseignants, setEnseignants] = useState([]);
+  const [selectedUE, setSelectedUE] = useState('');
+  const [selectedEnseignant, setSelectedEnseignant] = useState('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [ueRes, usrRes] = await Promise.all([
+          unitesEnseignementService.getAll(),
+          usersService.getAll(),
+        ]);
+        setUes(ueRes.data);
+        const teachers = usrRes.data.filter((u) =>
+          u.roles?.some((r) => (r.nom_role || r) === 'Enseignant')
+        );
+        setEnseignants(teachers);
+      } catch { /* ignore */ }
+    };
+    loadData();
+  }, []);
+
+  const loadRecap = async () => {
+    setRecapLoading(true);
+    try {
+      const res = await dashboardService.getRecapitulatif(dateDebut, dateFin);
+      setRecap(res.data);
+    } catch {
+      toast.error('Erreur chargement recapitulatif');
+    } finally {
+      setRecapLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRecap();
+  }, [dateDebut, dateFin]);
+
+  const handleExport = async (type) => {
     setLoading(true);
     try {
-      const res = await dashboardService.exportHeures(annee, mois);
-      const blob = new Blob([res.data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `heures_${annee}_${String(mois).padStart(2, '0')}.xlsx`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-      toast.success('Export telecharge avec succes');
+      let res;
+      let fallback;
+      switch (type) {
+        case 'bilan':
+          res = await dashboardService.exportBilan(dateDebut, dateFin);
+          fallback = 'bilan_cours.xlsx';
+          break;
+        case 'par-ue':
+          res = await dashboardService.exportParUE(dateDebut, dateFin, selectedUE);
+          fallback = 'fiches_par_ue.xlsx';
+          break;
+        case 'par-enseignant':
+          res = await dashboardService.exportParEnseignant(dateDebut, dateFin, selectedEnseignant);
+          fallback = 'fiches_par_enseignant.xlsx';
+          break;
+      }
+      downloadBlob(res, fallback);
+      toast.success('Export telecharge');
     } catch {
-      toast.error('Erreur lors de l\'export');
+      toast.error('Erreur export');
     } finally {
       setLoading(false);
     }
@@ -61,53 +123,301 @@ export default function ExportPage() {
 
   return (
     <Box className="fade-in">
-      <PageHeader title="Export des heures" description="Telechargez le recapitulatif des heures en format Excel" />
+      <PageHeader title="Export et recapitulatif" description="Telechargez les bilans de cours en format Excel" />
 
-      <Card sx={{ maxWidth: 600 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            Parametres d'export
+      {/* Filtres de periode */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#7E7E7E' }}>
+            Periode
           </Typography>
-
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, sm: 6 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 12, sm: 5 }}>
               <TextField
-                select
+                type="date"
+                label="Date debut"
                 fullWidth
-                label="Mois"
-                value={mois}
-                onChange={(e) => setMois(e.target.value)}
-              >
-                {months.map((m) => (
-                  <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
-                ))}
-              </TextField>
+                value={dateDebut}
+                onChange={(e) => setDateDebut(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
             </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
+            <Grid size={{ xs: 12, sm: 5 }}>
               <TextField
-                select
+                type="date"
+                label="Date fin"
                 fullWidth
-                label="Annee"
-                value={annee}
-                onChange={(e) => setAnnee(e.target.value)}
+                value={dateFin}
+                onChange={(e) => setDateFin(e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <Button
+                variant="outlined"
+                fullWidth
+                sx={{ height: 56 }}
+                onClick={() => { setDateDebut(''); setDateFin(''); }}
               >
-                {years.map((y) => (
-                  <MenuItem key={y} value={y}>{y}</MenuItem>
-                ))}
-              </TextField>
+                Reinitialiser
+              </Button>
             </Grid>
           </Grid>
+        </CardContent>
+      </Card>
 
-          <Button
-            variant="contained"
-            startIcon={loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : <FileDownload />}
-            onClick={handleExport}
-            disabled={loading}
-            fullWidth
-            sx={{ mt: 4, py: 1.5 }}
-          >
-            {loading ? 'Export en cours...' : 'Telecharger le fichier Excel'}
-          </Button>
+      {/* Recapitulatif */}
+      {recap && !recapLoading && (
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#001EA6' }}>
+                  {recap.total_heures}h
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7E7E7E', mt: 0.5 }}>Heures totales validees</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#10B981' }}>
+                  {recap.total_fiches}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7E7E7E', mt: 0.5 }}>Fiches validees</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 4 }}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                <Typography variant="h3" sx={{ fontWeight: 800, color: '#7C3AED' }}>
+                  {recap.par_ue?.length || 0}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7E7E7E', mt: 0.5 }}>UEs actives</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Tabs Recapitulatif / Export */}
+      <Card>
+        <CardContent sx={{ p: 0 }}>
+          <Box sx={{ px: 3, pt: 2 }}>
+            <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+              <Tab icon={<Assessment sx={{ fontSize: 18 }} />} iconPosition="start" label="Recapitulatif" sx={{ textTransform: 'none', fontWeight: 600 }} />
+              <Tab icon={<FileDownload sx={{ fontSize: 18 }} />} iconPosition="start" label="Export" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            </Tabs>
+          </Box>
+          <Divider />
+
+          {/* Tab Recapitulatif */}
+          {tab === 0 && (
+            <Box sx={{ p: 3 }}>
+              {recapLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : recap ? (
+                <Grid container spacing={3}>
+                  {/* Par UE */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+                      <UEIcon sx={{ fontSize: 18, mr: 1, verticalAlign: 'text-bottom' }} />
+                      Heures par UE
+                    </Typography>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700 }}>UE</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700 }}>Seances</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700 }}>Heures</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {recap.par_ue?.map((item) => (
+                            <TableRow key={item.code_ue} hover>
+                              <TableCell>
+                                <Chip label={item.code_ue} size="small" sx={{ bgcolor: '#001EA614', color: '#001EA6', fontWeight: 600 }} />
+                              </TableCell>
+                              <TableCell align="center">{item.nb_fiches}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>{item.heures}h</TableCell>
+                            </TableRow>
+                          ))}
+                          {recap.par_ue?.length > 0 && (
+                            <TableRow sx={{ bgcolor: '#F5F5F5' }}>
+                              <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
+                              <TableCell align="center" sx={{ fontWeight: 700 }}>
+                                {recap.par_ue.reduce((s, i) => s + i.nb_fiches, 0)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>
+                                {recap.par_ue.reduce((s, i) => s + i.heures, 0).toFixed(2)}h
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Grid>
+
+                  {/* Par enseignant */}
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2 }}>
+                      <PersonIcon sx={{ fontSize: 18, mr: 1, verticalAlign: 'text-bottom' }} />
+                      Heures par enseignant
+                    </Typography>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 700 }}>Enseignant</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 700 }}>Seances</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700 }}>Heures</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {recap.par_enseignant?.map((item) => (
+                            <TableRow key={item.id} hover>
+                              <TableCell>{item.nom}</TableCell>
+                              <TableCell align="center">{item.nb_fiches}</TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>{item.heures}h</TableCell>
+                            </TableRow>
+                          ))}
+                          {recap.par_enseignant?.length > 0 && (
+                            <TableRow sx={{ bgcolor: '#F5F5F5' }}>
+                              <TableCell sx={{ fontWeight: 700 }}>TOTAL</TableCell>
+                              <TableCell align="center" sx={{ fontWeight: 700 }}>
+                                {recap.par_enseignant.reduce((s, i) => s + i.nb_fiches, 0)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700 }}>
+                                {recap.par_enseignant.reduce((s, i) => s + i.heures, 0).toFixed(2)}h
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Grid>
+                </Grid>
+              ) : (
+                <Typography variant="body2" sx={{ color: '#7E7E7E', textAlign: 'center', py: 4 }}>
+                  Aucune donnee disponible
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {/* Tab Export */}
+          {tab === 1 && (
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3}>
+                {/* Bilan global */}
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <ListAlt sx={{ color: '#001EA6' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Bilan global</Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#7E7E7E', mb: 'auto', pb: 2 }}>
+                        Toutes les fiches validees dans un seul tableau, triees par enseignant puis par date. Format identique au bilan officiel.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        startIcon={loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : <FileDownload />}
+                        onClick={() => handleExport('bilan')}
+                        disabled={loading}
+                        fullWidth
+                      >
+                        Telecharger
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Par UE */}
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <UEIcon sx={{ color: '#3B82F6' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Par UE</Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#7E7E7E', mb: 2 }}>
+                        Un onglet Excel par unite d'enseignement, avec un recapitulatif en premiere page.
+                      </Typography>
+                      <TextField
+                        select
+                        fullWidth
+                        label="UE (optionnel)"
+                        value={selectedUE}
+                        onChange={(e) => setSelectedUE(e.target.value)}
+                        sx={{ mb: 2 }}
+                        size="small"
+                      >
+                        <MenuItem value="">Toutes les UEs</MenuItem>
+                        {ues.map((u) => (
+                          <MenuItem key={u.id} value={u.id}>{u.code_ue} - {u.libelle_ue}</MenuItem>
+                        ))}
+                      </TextField>
+                      <Button
+                        variant="contained"
+                        startIcon={loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : <FileDownload />}
+                        onClick={() => handleExport('par-ue')}
+                        disabled={loading}
+                        fullWidth
+                        sx={{ bgcolor: '#3B82F6', '&:hover': { bgcolor: '#2563EB' }, mt: 'auto' }}
+                      >
+                        Telecharger
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Par enseignant */}
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Card variant="outlined" sx={{ height: '100%' }}>
+                    <CardContent sx={{ display: 'flex', flexDirection: 'column', height: '100%', p: 3 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <PersonIcon sx={{ color: '#7C3AED' }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Par enseignant</Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ color: '#7E7E7E', mb: 2 }}>
+                        Un onglet Excel par enseignant, avec un recapitulatif des heures en premiere page.
+                      </Typography>
+                      <TextField
+                        select
+                        fullWidth
+                        label="Enseignant (optionnel)"
+                        value={selectedEnseignant}
+                        onChange={(e) => setSelectedEnseignant(e.target.value)}
+                        sx={{ mb: 2 }}
+                        size="small"
+                      >
+                        <MenuItem value="">Tous les enseignants</MenuItem>
+                        {enseignants.map((e) => (
+                          <MenuItem key={e.id} value={e.id}>{e.last_name} {e.first_name}</MenuItem>
+                        ))}
+                      </TextField>
+                      <Button
+                        variant="contained"
+                        startIcon={loading ? <CircularProgress size={18} sx={{ color: '#fff' }} /> : <FileDownload />}
+                        onClick={() => handleExport('par-enseignant')}
+                        disabled={loading}
+                        fullWidth
+                        sx={{ bgcolor: '#7C3AED', '&:hover': { bgcolor: '#6D28D9' }, mt: 'auto' }}
+                      >
+                        Telecharger
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
         </CardContent>
       </Card>
     </Box>
