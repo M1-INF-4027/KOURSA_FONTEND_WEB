@@ -2,6 +2,22 @@
 
 Application web React pour la plateforme **Koursa** - Systeme de gestion academique et de suivi pedagogique.
 
+## Fonctionnalites principales
+
+- Authentification JWT avec gestion automatique du refresh token
+- Dashboard adaptatif selon le role de l'utilisateur
+- Gestion des fiches de suivi pedagogique (creation, validation, refus, resoumission)
+- Filtrage par classe (Filiere / Niveau / Semestre) sur l'ensemble du systeme
+- Structure academique complete (Facultes, Departements, Filieres, Niveaux, UEs)
+- Gestion des utilisateurs avec systeme d'approbation
+- Export Excel des bilans (global, par UE, par enseignant)
+- Inscription enseignant avec page d'attente de validation
+- Interface responsive avec Material UI et Tailwind CSS
+- Notifications toast pour les retours utilisateur
+- Graphiques statistiques avec Recharts
+
+---
+
 ## Deploiement Production
 
 - **URL:** https://koursa.duckdns.org
@@ -18,11 +34,13 @@ Application web React pour la plateforme **Koursa** - Systeme de gestion academi
 | React | 19 | Librairie UI |
 | Vite | 7 | Build tool |
 | Material UI | 7 | Composants UI |
+| MUI X Date Pickers | - | Selecteurs date/heure |
 | React Router | 7 | Navigation SPA |
 | Axios | 1.9 | Client HTTP |
 | Recharts | 2.15 | Graphiques |
 | React Hot Toast | 2.5 | Notifications |
 | Tailwind CSS | 4 | Utilitaires CSS |
+| Day.js | - | Manipulation de dates |
 
 ## Structure du projet
 
@@ -41,6 +59,7 @@ KOURSA_FONTEND_WEB/
 │   │   │   ├── StatusBadge.jsx
 │   │   │   ├── RoleBadge.jsx
 │   │   │   ├── ConfirmDialog.jsx
+│   │   │   ├── PasswordDialog.jsx
 │   │   │   └── EmptyState.jsx
 │   │   ├── guards/               # Protection des routes
 │   │   │   ├── AuthGuard.jsx     # Authentification + redirection EN_ATTENTE
@@ -94,15 +113,42 @@ KOURSA_FONTEND_WEB/
 
 ---
 
+## Variables d'environnement
+
+Creer un fichier `.env` a la racine du projet (ou `.env.local` pour le dev) :
+
+| Variable | Description | Defaut |
+|----------|-------------|--------|
+| `VITE_API_URL` | URL de base de l'API backend | `http://localhost:8000/api` (dev) / `https://koursa.duckdns.org/api` (prod) |
+
+Exemple `.env` :
+```env
+VITE_API_URL=http://localhost:8000/api
+```
+
+La configuration se trouve dans `src/api/config.js`.
+
+---
+
 ## Roles et acces
 
 | Role | Dashboard | Pages accessibles |
 |------|-----------|-------------------|
 | **Super Administrateur** | Stats globales (utilisateurs, UEs, fiches) | Structure academique, UEs, Utilisateurs, Fiches |
-| **Chef de Departement** | Stats departement (heures, retards, UEs) | Demandes, Utilisateurs, Fiches, Export |
+| **Chef de Departement** | Stats departement avec filtres filiere/niveau/semestre | Demandes, Utilisateurs, Fiches, Export |
 | **Chef + Enseignant** | Dashboard Chef + acces "Mes Fiches" | Tout le menu Chef + Mes Fiches enseignant |
-| **Enseignant** | Fiches en attente + validees | Mes Fiches |
-| **Delegue** | Stats fiches + action rapide | Mes Fiches (creation, soumission) |
+| **Enseignant** | Fiches en attente + validees | Mes Fiches (avec classe/niveau affiche) |
+| **Delegue** | Stats fiches + action rapide | Mes Fiches (creation avec classe visible, soumission) |
+
+### Filtrage par classe (Filiere / Niveau / Semestre)
+
+Le systeme gere les fiches **par classe** (ex: INF L1, MATH M1). Chaque UE est liee a un ou plusieurs niveaux, et chaque niveau appartient a une filiere.
+
+- **Dashboard Chef** : selecteurs Filiere → Niveau → Semestre pour filtrer les statistiques
+- **Page Export** : memes selecteurs pour exporter les bilans d'une classe specifique
+- **Toutes les listes de fiches** : colonne "Classe" visible (admin, chef, delegue, enseignant)
+- **Pages detail fiche** : affichent la classe et le semestre
+- **Creation de fiche (delegue)** : le selecteur UE affiche la classe (ex: "INF101 - Algo (Informatique M1)")
 
 ---
 
@@ -135,12 +181,29 @@ cd KOURSA_FONTEND_WEB
 npm install
 ```
 
-3. **Lancer le serveur de developpement**
+3. **Configurer les variables d'environnement** (optionnel)
+```bash
+# Creer un fichier .env a la racine
+echo "VITE_API_URL=http://localhost:8000/api" > .env
+```
+
+4. **Lancer le serveur de developpement**
 ```bash
 npm run dev
 ```
 
 L'application sera accessible sur http://localhost:5173/
+
+---
+
+## Scripts npm
+
+| Commande | Description |
+|----------|-------------|
+| `npm run dev` | Lancer le serveur de developpement (Vite) |
+| `npm run build` | Build de production (genere `dist/`) |
+| `npm run preview` | Previsualiser le build de production |
+| `npm run lint` | Linter le code |
 
 ### Build production
 
@@ -152,13 +215,9 @@ Les fichiers sont generes dans le dossier `dist/`.
 
 ---
 
-## Configuration API
+## Equipe
 
-La configuration se trouve dans `src/api/config.js`. L'URL de l'API est definie par la variable d'environnement `VITE_API_URL` ou par defaut :
-- **Production:** `https://koursa.duckdns.org/api`
-- **Developpement:** `http://localhost:8000/api`
-
----
+Projet realise par **M1 INF 4027** - Master 1 Informatique.
 
 ## Licence
 
