@@ -135,6 +135,7 @@ export default function FichesListPage() {
                   <TableHead>
                     <TableRow>
                       <TableCell>UE</TableCell>
+                      <TableCell>Classe</TableCell>
                       <TableCell>Chapitre</TableCell>
                       <TableCell>Date</TableCell>
                       <TableCell>Type</TableCell>
@@ -152,11 +153,9 @@ export default function FichesListPage() {
                       >
                         <TableCell sx={{ fontWeight: 600 }}>
                           {f.code_ue || f.ue?.code_ue || '-'}
-                          {(f.libelle_ue || f.ue?.libelle_ue) && (
-                            <Box component="span" sx={{ color: '#7E7E7E', fontWeight: 400, ml: 0.5 }}>
-                              - {f.libelle_ue || f.ue?.libelle_ue}
-                            </Box>
-                          )}
+                        </TableCell>
+                        <TableCell>
+                          {f.classe ? <Chip label={f.classe} size="small" variant="outlined" sx={{ fontWeight: 600 }} /> : '-'}
                         </TableCell>
                         <TableCell>{f.titre_chapitre}</TableCell>
                         <TableCell>{f.date_cours}</TableCell>

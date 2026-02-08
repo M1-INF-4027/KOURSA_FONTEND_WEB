@@ -137,7 +137,7 @@ export default function UEsPage() {
         return (
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
             {nivs.slice(0, 2).map((n, i) => (
-              <Chip key={i} label={typeof n === 'object' ? n.nom_niveau : n} size="small" variant="outlined" />
+              <Chip key={i} label={typeof n === 'object' ? `${n.filiere_nom || ''} ${n.nom_niveau}`.trim() : n} size="small" variant="outlined" />
             ))}
             {nivs.length > 2 && <Chip label={`+${nivs.length - 2}`} size="small" variant="outlined" />}
           </Box>
@@ -226,7 +226,7 @@ export default function UEsPage() {
           <Autocomplete
             multiple
             options={niveaux}
-            getOptionLabel={(o) => typeof o === 'object' ? o.nom_niveau : String(o)}
+            getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
             value={form.niveaux.map((n) => typeof n === 'object' ? n : niveaux.find((x) => x.id === n) || n)}
             onChange={(_, val) => setForm({ ...form, niveaux: val })}
             isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}

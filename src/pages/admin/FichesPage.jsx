@@ -49,6 +49,7 @@ export default function AdminFichesPage() {
 
   const columns = [
     { field: 'code_ue', label: 'UE', render: (r) => <strong>{r.code_ue || r.ue?.code_ue || '-'}</strong> },
+    { field: 'classe', label: 'Classe', render: (r) => r.classe ? <Chip label={r.classe} size="small" variant="outlined" sx={{ fontWeight: 600 }} /> : '-' },
     { field: 'titre_chapitre', label: 'Chapitre' },
     { field: 'date_cours', label: 'Date' },
     {
@@ -116,6 +117,10 @@ export default function AdminFichesPage() {
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="caption" sx={{ color: '#7E7E7E' }}>UE</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{selected.code_ue || selected.ue?.code_ue}</Typography>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <Typography variant="caption" sx={{ color: '#7E7E7E' }}>Classe</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{selected.classe || '-'}{selected.semestre ? ` (S${selected.semestre})` : ''}</Typography>
                 </Grid>
                 <Grid size={{ xs: 6 }}>
                   <Typography variant="caption" sx={{ color: '#7E7E7E' }}>Type</Typography>

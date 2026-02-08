@@ -220,7 +220,11 @@ export default function CreateFichePage() {
                     setSelectedUe(value);
                     setSelectedEnseignant(null);
                   }}
-                  getOptionLabel={(option) => `${option.code_ue} - ${option.libelle_ue}`}
+                  getOptionLabel={(option) => {
+                    const nivs = option.niveaux_details || [];
+                    const classeLabel = nivs.map((n) => `${n.filiere_nom || ''} ${n.nom_niveau}`.trim()).join(', ');
+                    return `${option.code_ue} - ${option.libelle_ue}${classeLabel ? ` (${classeLabel})` : ''}`;
+                  }}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   renderInput={(params) => (
                     <TextField

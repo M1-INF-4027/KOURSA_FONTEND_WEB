@@ -20,6 +20,7 @@ import {
   Room,
   Person,
   MenuBook,
+  School,
 } from '@mui/icons-material';
 import StatusBadge from '../../components/common/StatusBadge';
 import { fichesSuiviService } from '../../api/services';
@@ -119,7 +120,10 @@ export default function FicheDetailPage() {
                   <InfoRow icon={<Room fontSize="small" />} label="Salle" value={fiche.salle} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                  <InfoRow icon={<MenuBook fontSize="small" />} label="UE" value={`${fiche.code_ue || fiche.ue?.code_ue || ''} - ${fiche.libelle_ue || fiche.ue?.libelle_ue || ''}`} />
+                  <InfoRow icon={<MenuBook fontSize="small" />} label="UE" value={`${fiche.code_ue || fiche.ue?.code_ue || ''} - ${fiche.nom_ue || fiche.ue?.libelle_ue || ''}`} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <InfoRow icon={<School fontSize="small" />} label="Classe" value={`${fiche.classe || '-'}${fiche.semestre ? ` (S${fiche.semestre})` : ''}`} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <InfoRow icon={<Person fontSize="small" />} label="Enseignant" value={fiche.nom_enseignant || `${fiche.enseignant?.first_name || ''} ${fiche.enseignant?.last_name || ''}`} />

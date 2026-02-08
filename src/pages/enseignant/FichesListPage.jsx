@@ -120,6 +120,7 @@ export default function FichesListPage() {
                   <TableHead>
                     <TableRow>
                       <TableCell>UE</TableCell>
+                      <TableCell>Classe</TableCell>
                       <TableCell>Chapitre</TableCell>
                       <TableCell>Date</TableCell>
                       <TableCell>Type</TableCell>
@@ -136,6 +137,9 @@ export default function FichesListPage() {
                         onClick={() => navigate(`/fiches/${f.id}`)}
                       >
                         <TableCell sx={{ fontWeight: 600 }}>{f.code_ue || f.ue?.code_ue || '-'}</TableCell>
+                        <TableCell>
+                          {f.classe ? <Chip label={f.classe} size="small" variant="outlined" sx={{ fontWeight: 600 }} /> : '-'}
+                        </TableCell>
                         <TableCell>{f.titre_chapitre}</TableCell>
                         <TableCell>{f.date_cours}</TableCell>
                         <TableCell>
