@@ -49,6 +49,9 @@ function downloadBlob(res, fallbackName) {
 export default function ExportPage() {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
+  const [selectedFiliere, setSelectedFiliere] = useState('');
+  const [selectedNiveau, setSelectedNiveau] = useState('');
+  const [selectedSemestre, setSelectedSemestre] = useState('');
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const [recap, setRecap] = useState(null);
@@ -77,10 +80,19 @@ export default function ExportPage() {
     loadData();
   }, []);
 
+  // Build filters object
+  const filters = {
+    dateDebut,
+    dateFin,
+    filiere: selectedFiliere,
+    niveau: selectedNiveau,
+    semestre: selectedSemestre,
+  };
+
   const loadRecap = async () => {
     setRecapLoading(true);
     try {
-      const res = await dashboardService.getRecapitulatif(dateDebut, dateFin);
+      const res = await dashboardService.getRecapitulatif(filters);
       setRecap(res.data);
     } catch {
       toast.error('Erreur chargement recapitulatif');
@@ -91,7 +103,38 @@ export default function ExportPage() {
 
   useEffect(() => {
     loadRecap();
-  }, [dateDebut, dateFin]);
+  }, [dateDebut, dateFin, selectedFiliere, selectedNiveau, selectedSemestre]);
+
+  // Filter niveaux by selected filiere
+  const filteredNiveaux = selectedFiliere
+    ? (recap?.niveaux || []).filter((n) => n.filiere_id === Number(selectedFiliere))
+    : recap?.niveaux || [];
+
+  const handleFiliereChange = (val) => {
+    setSelectedFiliere(val);
+    setSelectedNiveau('');
+    setSelectedSemestre('');
+  };
+
+  const handleNiveauChange = (val) => {
+    setSelectedNiveau(val);
+    setSelectedSemestre('');
+  };
+
+  const handleReset = () => {
+    setDateDebut('');
+    setDateFin('');
+    setSelectedFiliere('');
+    setSelectedNiveau('');
+    setSelectedSemestre('');
+  };
+
+  // Current filter label for display
+  const filterLabel = [
+    recap?.filieres?.find((f) => f.id === Number(selectedFiliere))?.nom,
+    recap?.niveaux?.find((n) => n.id === Number(selectedNiveau))?.nom,
+    selectedSemestre ? `S${selectedSemestre}` : null,
+  ].filter(Boolean).join(' - ');
 
   const handleExport = async (type) => {
     setLoading(true);
@@ -100,15 +143,15 @@ export default function ExportPage() {
       let fallback;
       switch (type) {
         case 'bilan':
-          res = await dashboardService.exportBilan(dateDebut, dateFin);
+          res = await dashboardService.exportBilan(filters);
           fallback = 'bilan_cours.xlsx';
           break;
         case 'par-ue':
-          res = await dashboardService.exportParUE(dateDebut, dateFin, selectedUE);
+          res = await dashboardService.exportParUE(filters, selectedUE);
           fallback = 'fiches_par_ue.xlsx';
           break;
         case 'par-enseignant':
-          res = await dashboardService.exportParEnseignant(dateDebut, dateFin, selectedEnseignant);
+          res = await dashboardService.exportParEnseignant(filters, selectedEnseignant);
           fallback = 'fiches_par_enseignant.xlsx';
           break;
       }
@@ -125,12 +168,65 @@ export default function ExportPage() {
     <Box className="fade-in">
       <PageHeader title="Export et recapitulatif" description="Telechargez les bilans de cours en format Excel" />
 
-      {/* Filtres de periode */}
+      {/* Filtres */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#7E7E7E' }}>
-            Periode
+            Filtres
           </Typography>
+
+          {/* Filiere / Niveau / Semestre */}
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Filiere"
+                value={selectedFiliere}
+                onChange={(e) => handleFiliereChange(e.target.value)}
+                size="small"
+              >
+                <MenuItem value="">Toutes les filieres</MenuItem>
+                {(recap?.filieres || []).map((f) => (
+                  <MenuItem key={f.id} value={f.id}>{f.nom}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Niveau"
+                value={selectedNiveau}
+                onChange={(e) => handleNiveauChange(e.target.value)}
+                size="small"
+                disabled={filteredNiveaux.length === 0}
+              >
+                <MenuItem value="">Tous les niveaux</MenuItem>
+                {filteredNiveaux.map((n) => (
+                  <MenuItem key={n.id} value={n.id}>
+                    {n.nom}{!selectedFiliere ? ` (${n.filiere_nom})` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Semestre"
+                value={selectedSemestre}
+                onChange={(e) => setSelectedSemestre(e.target.value)}
+                size="small"
+              >
+                <MenuItem value="">Tous les semestres</MenuItem>
+                <MenuItem value="1">Semestre 1</MenuItem>
+                <MenuItem value="2">Semestre 2</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+
+          {/* Periode */}
           <Grid container spacing={2} alignItems="center">
             <Grid size={{ xs: 12, sm: 5 }}>
               <TextField
@@ -140,6 +236,7 @@ export default function ExportPage() {
                 value={dateDebut}
                 onChange={(e) => setDateDebut(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                size="small"
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 5 }}>
@@ -150,23 +247,36 @@ export default function ExportPage() {
                 value={dateFin}
                 onChange={(e) => setDateFin(e.target.value)}
                 slotProps={{ inputLabel: { shrink: true } }}
+                size="small"
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 2 }}>
               <Button
                 variant="outlined"
                 fullWidth
-                sx={{ height: 56 }}
-                onClick={() => { setDateDebut(''); setDateFin(''); }}
+                sx={{ height: 40 }}
+                onClick={handleReset}
               >
                 Reinitialiser
               </Button>
             </Grid>
           </Grid>
+
+          {filterLabel && (
+            <Box sx={{ mt: 2 }}>
+              <Chip
+                label={filterLabel}
+                color="primary"
+                variant="outlined"
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+          )}
         </CardContent>
       </Card>
 
-      {/* Recapitulatif */}
+      {/* Recapitulatif cards */}
       {recap && !recapLoading && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid size={{ xs: 12, sm: 4 }}>
@@ -323,7 +433,8 @@ export default function ExportPage() {
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Bilan global</Typography>
                       </Box>
                       <Typography variant="body2" sx={{ color: '#7E7E7E', mb: 'auto', pb: 2 }}>
-                        Toutes les fiches validees dans un seul tableau, triees par enseignant puis par date. Format identique au bilan officiel.
+                        Toutes les fiches validees dans un seul tableau, triees par enseignant puis par date.
+                        {filterLabel && <><br />Filtre : <strong>{filterLabel}</strong></>}
                       </Typography>
                       <Button
                         variant="contained"

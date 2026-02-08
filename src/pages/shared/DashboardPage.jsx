@@ -16,6 +16,8 @@ import {
   Skeleton,
   Chip,
   Button,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import {
   Description as FichesIcon,
@@ -151,31 +153,116 @@ function EnseignantDashboard() {
 function ChefDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedFiliere, setSelectedFiliere] = useState('');
+  const [selectedNiveau, setSelectedNiveau] = useState('');
+  const [selectedSemestre, setSelectedSemestre] = useState('');
+
+  const loadStats = async (filiere, niveau, semestre) => {
+    setLoading(true);
+    try {
+      const res = await dashboardService.getStats({ filiere, niveau, semestre });
+      setStats(res.data);
+    } catch {
+      toast.error('Erreur chargement des statistiques');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await dashboardService.getStats();
-        setStats(res.data);
-      } catch {
-        toast.error('Erreur chargement des statistiques');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+    loadStats(selectedFiliere, selectedNiveau, selectedSemestre);
+  }, [selectedFiliere, selectedNiveau, selectedSemestre]);
 
-  if (loading) return <DashboardSkeleton count={3} />;
+  // Filter niveaux by selected filiere
+  const filteredNiveaux = selectedFiliere
+    ? (stats?.niveaux || []).filter((n) => n.filiere_id === Number(selectedFiliere))
+    : stats?.niveaux || [];
+
+  // Reset niveau when filiere changes
+  const handleFiliereChange = (val) => {
+    setSelectedFiliere(val);
+    setSelectedNiveau('');
+    setSelectedSemestre('');
+  };
+
+  const handleNiveauChange = (val) => {
+    setSelectedNiveau(val);
+    setSelectedSemestre('');
+  };
 
   const chartData = stats?.repartition_heures_par_ue_ce_mois?.map((item) => ({
     name: item.code_ue || item.ue__code_ue || 'UE',
-    heures: parseFloat(item.total_heures || item.total || 0),
+    heures: parseFloat(item.heures_effectuees || item.total_heures || item.total || 0),
   })) || [];
+
+  // Build current filter label
+  const filterLabel = [
+    stats?.filieres?.find((f) => f.id === Number(selectedFiliere))?.nom,
+    stats?.niveaux?.find((n) => n.id === Number(selectedNiveau))?.nom,
+    selectedSemestre ? `S${selectedSemestre}` : null,
+  ].filter(Boolean).join(' - ') || 'Tout le departement';
 
   return (
     <Box className="fade-in">
       <PageHeader title="Tableau de bord" description="Vue d'ensemble de votre departement" />
+
+      {/* Filtres Filiere / Niveau / Semestre */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#7E7E7E' }}>
+            Filtrer par classe
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Filiere"
+                value={selectedFiliere}
+                onChange={(e) => handleFiliereChange(e.target.value)}
+                size="small"
+              >
+                <MenuItem value="">Toutes les filieres</MenuItem>
+                {(stats?.filieres || []).map((f) => (
+                  <MenuItem key={f.id} value={f.id}>{f.nom}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Niveau"
+                value={selectedNiveau}
+                onChange={(e) => handleNiveauChange(e.target.value)}
+                size="small"
+                disabled={filteredNiveaux.length === 0}
+              >
+                <MenuItem value="">Tous les niveaux</MenuItem>
+                {filteredNiveaux.map((n) => (
+                  <MenuItem key={n.id} value={n.id}>
+                    {n.nom}{!selectedFiliere ? ` (${n.filiere_nom})` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Semestre"
+                value={selectedSemestre}
+                onChange={(e) => setSelectedSemestre(e.target.value)}
+                size="small"
+              >
+                <MenuItem value="">Tous les semestres</MenuItem>
+                <MenuItem value="1">Semestre 1</MenuItem>
+                <MenuItem value="2">Semestre 2</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
@@ -207,7 +294,9 @@ function ChefDashboard() {
       {chartData.length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Repartition des heures par UE</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Repartition des heures par UE — {filterLabel}
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />

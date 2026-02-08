@@ -24,32 +24,37 @@ export const authService = {
 };
 
 // ==================== DASHBOARD ====================
+function buildDashboardParams({ dateDebut, dateFin, filiere, niveau, semestre } = {}) {
+  const params = new URLSearchParams();
+  if (dateDebut) params.append('date_debut', dateDebut);
+  if (dateFin) params.append('date_fin', dateFin);
+  if (filiere) params.append('filiere', filiere);
+  if (niveau) params.append('niveau', niveau);
+  if (semestre) params.append('semestre', semestre);
+  return params;
+}
+
 export const dashboardService = {
   getRoot: () => api.get('/dashboard/'),
-  getStats: () => api.get('/dashboard/stats/'),
-  getRecapitulatif: (dateDebut, dateFin) => {
-    const params = new URLSearchParams();
-    if (dateDebut) params.append('date_debut', dateDebut);
-    if (dateFin) params.append('date_fin', dateFin);
+  getStats: (filters) => {
+    const params = buildDashboardParams(filters);
+    return api.get(`/dashboard/stats/?${params.toString()}`);
+  },
+  getRecapitulatif: (filters) => {
+    const params = buildDashboardParams(filters);
     return api.get(`/dashboard/recapitulatif/?${params.toString()}`);
   },
-  exportBilan: (dateDebut, dateFin) => {
-    const params = new URLSearchParams();
-    if (dateDebut) params.append('date_debut', dateDebut);
-    if (dateFin) params.append('date_fin', dateFin);
+  exportBilan: (filters) => {
+    const params = buildDashboardParams(filters);
     return api.get(`/dashboard/export-bilan/?${params.toString()}`, { responseType: 'blob' });
   },
-  exportParUE: (dateDebut, dateFin, ueId) => {
-    const params = new URLSearchParams();
-    if (dateDebut) params.append('date_debut', dateDebut);
-    if (dateFin) params.append('date_fin', dateFin);
+  exportParUE: (filters, ueId) => {
+    const params = buildDashboardParams(filters);
     if (ueId) params.append('ue', ueId);
     return api.get(`/dashboard/export-par-ue/?${params.toString()}`, { responseType: 'blob' });
   },
-  exportParEnseignant: (dateDebut, dateFin, enseignantId) => {
-    const params = new URLSearchParams();
-    if (dateDebut) params.append('date_debut', dateDebut);
-    if (dateFin) params.append('date_fin', dateFin);
+  exportParEnseignant: (filters, enseignantId) => {
+    const params = buildDashboardParams(filters);
     if (enseignantId) params.append('enseignant', enseignantId);
     return api.get(`/dashboard/export-par-enseignant/?${params.toString()}`, { responseType: 'blob' });
   },
