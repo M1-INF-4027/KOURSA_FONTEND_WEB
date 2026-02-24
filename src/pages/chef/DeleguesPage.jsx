@@ -53,12 +53,9 @@ export default function DeleguesPage() {
 
   useEffect(() => { load(); }, []);
 
-  const getRoleName = (user) => {
-    const role = user.roles?.find((r) => {
-      const name = r.nom_role || r;
-      return name === 'Délégué' || name === 'Enseignant';
-    });
-    return role?.nom_role || role || '-';
+  const getUserRoles = (user) => {
+    if (!user.roles?.length) return ['-'];
+    return user.roles.map((r) => r.nom_role || r);
   };
 
   const filtered = tab === 'ALL'
@@ -138,7 +135,13 @@ export default function DeleguesPage() {
                     <TableRow key={d.id} hover>
                       <TableCell sx={{ fontWeight: 600 }}>{d.first_name} {d.last_name}</TableCell>
                       <TableCell>{d.email}</TableCell>
-                      <TableCell><RoleBadge role={getRoleName(d)} /></TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                          {getUserRoles(d).map((role) => (
+                            <RoleBadge key={role} role={role} />
+                          ))}
+                        </Box>
+                      </TableCell>
                       <TableCell>{d.nom_niveau || d.niveau_represente?.nom_niveau || '-'}</TableCell>
                       <TableCell><StatusBadge status={d.statut} /></TableCell>
                       <TableCell align="right">

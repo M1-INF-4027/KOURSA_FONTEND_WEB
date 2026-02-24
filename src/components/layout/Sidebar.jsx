@@ -106,9 +106,6 @@ function SidebarContent({ onClose }) {
   } else {
     items = menuItems.enseignant;
   }
-  const mainRole = roles[0] || '';
-  const roleColor = roleColors[mainRole] || '#7E7E7E';
-
   const handleNav = (path) => {
     navigate(path);
     onClose?.();
@@ -129,25 +126,32 @@ function SidebarContent({ onClose }) {
         </Typography>
       </Box>
 
-      {/* User info + role badge */}
+      {/* User info + role badges */}
       <Box sx={{ px: 2.5, pb: 2 }}>
         <Typography variant="body2" sx={{ fontWeight: 600, color: '#131313', lineHeight: 1.3 }}>
           {user?.first_name} {user?.last_name}
         </Typography>
-        <Box
-          sx={{
-            display: 'inline-block',
-            mt: 0.5,
-            px: 1.5,
-            py: 0.3,
-            borderRadius: 2,
-            bgcolor: `${roleColor}14`,
-            color: roleColor,
-            fontSize: '0.7rem',
-            fontWeight: 700,
-          }}
-        >
-          {mainRole}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+          {roles.map((role) => {
+            const color = roleColors[role] || '#7E7E7E';
+            return (
+              <Box
+                key={role}
+                sx={{
+                  display: 'inline-block',
+                  px: 1.5,
+                  py: 0.3,
+                  borderRadius: 2,
+                  bgcolor: `${color}14`,
+                  color: color,
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                }}
+              >
+                {role}
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 
