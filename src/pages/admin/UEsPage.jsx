@@ -20,33 +20,39 @@ import { Add, Edit, Delete } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { unitesEnseignementService, usersService, niveauxService } from '../../api/services';
+import { unitesEnseignementService, usersService, niveauxService, semestresService } from '../../api/services';
+import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 export default function UEsPage() {
+  const { anneeActive } = useConfig();
   const [items, setItems] = useState([]);
   const [enseignants, setEnseignants] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
+  const [semestres, setSemestres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ code_ue: '', libelle_ue: '', semestre: '', enseignants: [], niveaux: [] });
+  const [form, setForm] = useState({ code_ue: '', libelle_ue: '', semestre_obj: '', enseignants: [], niveaux: [] });
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
   const load = async () => {
     try {
-      const [ueRes, usrRes, nivRes] = await Promise.all([
+      const [ueRes, usrRes, nivRes, semRes] = await Promise.all([
         unitesEnseignementService.getAll(),
         usersService.getAll(),
         niveauxService.getAll(),
+        semestresService.getAll(anneeActive ? { annee_academique: anneeActive.id } : {}),
       ]);
       setItems(ueRes.data);
       setEnseignants(usrRes.data.filter((u) =>
         u.roles?.some((r) => (r.nom_role || r) === 'Enseignant')
       ));
       setNiveaux(nivRes.data);
+      const semData = Array.isArray(semRes.data?.results) ? semRes.data.results : (Array.isArray(semRes.data) ? semRes.data : []);
+      setSemestres(semData);
     } catch {
       toast.error('Erreur chargement');
     } finally {
@@ -62,12 +68,12 @@ export default function UEsPage() {
       setForm({
         code_ue: item.code_ue || '',
         libelle_ue: item.libelle_ue || '',
-        semestre: item.semestre || '',
+        semestre_obj: item.semestre_obj || '',
         enseignants: item.enseignants || [],
         niveaux: item.niveaux || [],
       });
     } else {
-      setForm({ code_ue: '', libelle_ue: '', semestre: '', enseignants: [], niveaux: [] });
+      setForm({ code_ue: '', libelle_ue: '', semestre_obj: semestres[0]?.id || '', enseignants: [], niveaux: [] });
     }
     setDialogOpen(true);
   };
@@ -77,7 +83,9 @@ export default function UEsPage() {
     setSaving(true);
     try {
       const data = {
-        ...form,
+        code_ue: form.code_ue,
+        libelle_ue: form.libelle_ue,
+        semestre_obj: form.semestre_obj || null,
         enseignants: form.enseignants.map((e) => (typeof e === 'object' ? e.id : e)),
         niveaux: form.niveaux.map((n) => (typeof n === 'object' ? n.id : n)),
       };
@@ -111,7 +119,15 @@ export default function UEsPage() {
   const columns = [
     { field: 'code_ue', label: 'Code' },
     { field: 'libelle_ue', label: 'Libelle' },
-    { field: 'semestre', label: 'Semestre' },
+    {
+      field: 'semestre_info',
+      label: 'Semestre',
+      render: (r) => {
+        const info = r.semestre_info;
+        if (info) return <Chip label={`S${info.numero}`} size="small" variant="outlined" />;
+        return '-';
+      },
+    },
     {
       field: 'enseignants',
       label: 'Enseignants',
@@ -209,11 +225,18 @@ export default function UEsPage() {
             onChange={(e) => setForm({ ...form, libelle_ue: e.target.value })}
           />
           <TextField
+            select
             label="Semestre"
             fullWidth
-            value={form.semestre}
-            onChange={(e) => setForm({ ...form, semestre: e.target.value })}
-          />
+            value={form.semestre_obj}
+            onChange={(e) => setForm({ ...form, semestre_obj: e.target.value })}
+          >
+            {semestres.map((s) => (
+              <MenuItem key={s.id} value={s.id}>
+                Semestre {s.numero}
+              </MenuItem>
+            ))}
+          </TextField>
           <Autocomplete
             multiple
             options={enseignants}

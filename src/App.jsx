@@ -36,6 +36,9 @@ const NiveauxPage = lazy(() => import('./pages/admin/NiveauxPage'));
 const UEsPage = lazy(() => import('./pages/admin/UEsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const AdminFichesPage = lazy(() => import('./pages/admin/FichesPage'));
+const SetupWizardPage = lazy(() => import('./pages/admin/SetupWizardPage'));
+const NewYearWizardPage = lazy(() => import('./pages/admin/NewYearWizardPage'));
+const AnneesPage = lazy(() => import('./pages/admin/AnneesPage'));
 
 function Loading() {
   return (
@@ -57,6 +60,9 @@ export default function App() {
 
           {/* Protected */}
           <Route element={<AuthGuard />}>
+            {/* Setup wizard — full page, no sidebar */}
+            <Route path="/setup" element={<SetupWizardPage />} />
+
             <Route element={<MainLayout />}>
               {/* Redirect root to dashboard */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -94,6 +100,8 @@ export default function App() {
                 <Route path="/admin/ues" element={<UEsPage />} />
                 <Route path="/admin/utilisateurs" element={<AdminUsersPage />} />
                 <Route path="/admin/fiches" element={<AdminFichesPage />} />
+                <Route path="/admin/annees" element={<AnneesPage />} />
+                <Route path="/admin/nouvelle-annee" element={<NewYearWizardPage />} />
               </Route>
 
               {/* 404 */}

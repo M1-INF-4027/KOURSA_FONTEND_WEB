@@ -120,14 +120,43 @@ export const niveauxService = {
 // ==================== TEACHING ====================
 export const unitesEnseignementService = {
   getAll: () => fetchAll('/teaching/unites-enseignement/'),
+  getBySemestre: (semestreId) => fetchAll(`/teaching/unites-enseignement/?semestre_id=${semestreId}`),
+  getByAnnee: (anneeId) => fetchAll(`/teaching/unites-enseignement/?annee_academique=${anneeId}`),
   getById: (id) => api.get(`/teaching/unites-enseignement/${id}/`),
   create: (data) => api.post('/teaching/unites-enseignement/', data),
   update: (id, data) => api.patch(`/teaching/unites-enseignement/${id}/`, data),
   delete: (id) => api.delete(`/teaching/unites-enseignement/${id}/`),
 };
 
+// ==================== CONFIGURATION ====================
+export const configurationService = {
+  getStatus: () => api.get('/configuration/status/'),
+  createAnnee: (data) => api.post('/configuration/annee-academique/', data),
+  activerAnnee: (id) => api.post(`/configuration/annee-academique/${id}/activer/`),
+  activerSemestre: (id) => api.post(`/configuration/semestre/${id}/activer/`),
+  reconduire: (id) => api.post(`/configuration/annee-academique/${id}/reconduire/`),
+  getChecklist: () => api.get('/configuration/checklist/'),
+  markConfigured: (id) => api.post(`/configuration/annee-academique/${id}/marquer-configuree/`),
+  getChefChecklist: () => api.get('/configuration/chef-checklist/'),
+};
+
+// ==================== ANNEES ACADEMIQUES ====================
+export const anneesAcademiquesService = {
+  getAll: () => fetchAll('/academic/annees-academiques/'),
+  getById: (id) => api.get(`/academic/annees-academiques/${id}/`),
+  create: (data) => api.post('/academic/annees-academiques/', data),
+  update: (id, data) => api.patch(`/academic/annees-academiques/${id}/`, data),
+  delete: (id) => api.delete(`/academic/annees-academiques/${id}/`),
+};
+
+export const semestresService = {
+  getAll: (params) => api.get('/academic/semestres/', { params }),
+};
+
 export const fichesSuiviService = {
   getAll: () => fetchAll('/teaching/fiches-suivi/'),
+  getBySemestre: (semestreId) => fetchAll(`/teaching/fiches-suivi/?semestre_id=${semestreId}`),
+  getByAnnee: (anneeId) => fetchAll(`/teaching/fiches-suivi/?annee_academique=${anneeId}`),
   getById: (id) => api.get(`/teaching/fiches-suivi/${id}/`),
   create: (data) => api.post('/teaching/fiches-suivi/', data),
   update: (id, data) => api.patch(`/teaching/fiches-suivi/${id}/`, data),

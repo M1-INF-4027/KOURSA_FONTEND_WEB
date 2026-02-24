@@ -20,6 +20,7 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { SIDEBAR_WIDTH } from './Sidebar';
+import YearSemesterSelector from '../common/YearSemesterSelector';
 
 export default function Topbar({ onMenuToggle }) {
   const { user, logout } = useAuth();
@@ -64,7 +65,8 @@ export default function Topbar({ onMenuToggle }) {
           </Typography>
         </Box>
 
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <YearSemesterSelector />
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ p: 0.5 }}>
             <Avatar sx={{ width: 38, height: 38, bgcolor: '#001EA6', fontSize: '0.875rem', fontWeight: 700 }}>
               {initials}

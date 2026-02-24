@@ -4,6 +4,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import theme from './theme/theme';
 import { AuthProvider } from './contexts/AuthContext';
+import { ConfigProvider } from './contexts/ConfigContext';
 import App from './App';
 import './index.css';
 
@@ -12,8 +13,9 @@ createRoot(document.getElementById('root')).render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <App />
-        <Toaster
+        <ConfigProvider>
+          <App />
+          <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -24,6 +26,7 @@ createRoot(document.getElementById('root')).render(
             },
           }}
         />
+      </ConfigProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>

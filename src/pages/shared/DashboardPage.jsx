@@ -26,6 +26,7 @@ import {
   People as PeopleIcon,
   MenuBook as UEIcon,
   Warning as WarningIcon,
+  AutorenewRounded as NewYearIcon,
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import StatsCard from '../../components/common/StatsCard';
@@ -33,6 +34,8 @@ import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import { fichesSuiviService, dashboardService, usersService, unitesEnseignementService } from '../../api/services';
+import { useConfig } from '../../contexts/ConfigContext';
+import ChefChecklist from '../../components/common/ChefChecklist';
 import toast from 'react-hot-toast';
 import banniere from '../../assets/banniere.png';
 
@@ -205,6 +208,8 @@ function ChefDashboard() {
   return (
     <Box className="fade-in">
       <PageHeader title="Tableau de bord" description="Vue d'ensemble de votre departement" />
+
+      <ChefChecklist />
 
       {/* Filtres Filiere / Niveau / Semestre */}
       <Card sx={{ mb: 3 }}>
@@ -427,6 +432,8 @@ function DeleGueDashboard() {
 }
 
 function AdminDashboard() {
+  const navigate = useNavigate();
+  const { anneeActive, semestreActif, isConfigured } = useConfig();
   const [data, setData] = useState({ users: 0, ues: 0, fiches: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -457,9 +464,25 @@ function AdminDashboard() {
 
   return (
     <Box className="fade-in">
-      <PageHeader title="Tableau de bord" description="Vue globale de la plateforme" />
+      <PageHeader
+        title="Tableau de bord"
+        description={anneeActive ? `${anneeActive.libelle} — Semestre ${semestreActif?.numero || '?'}` : 'Vue globale de la plateforme'}
+      />
 
-      <Grid container spacing={3}>
+      {!isConfigured && (
+        <Card sx={{ mb: 3, borderLeft: '4px solid #F7B016' }}>
+          <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              La plateforme n'est pas encore configuree.
+            </Typography>
+            <Button variant="contained" size="small" onClick={() => navigate('/setup')}>
+              Configurer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatsCard title="Utilisateurs" value={data.users} icon={<PeopleIcon />} color="#001EA6" />
         </Grid>
@@ -473,6 +496,46 @@ function AdminDashboard() {
           <StatsCard title="Fiches en attente" value={data.pending} icon={<PendingIcon />} color="#F7B016" />
         </Grid>
       </Grid>
+
+      {/* Action nouvelle annee */}
+      {isConfigured && (
+        <Card
+          sx={{
+            cursor: 'pointer',
+            border: '1px solid #DFDFDF',
+            transition: 'all 0.2s',
+            '&:hover': { borderColor: '#001EA6', boxShadow: '0 2px 8px rgba(0,30,166,0.1)' },
+          }}
+          onClick={() => navigate('/admin/nouvelle-annee')}
+        >
+          <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                bgcolor: '#001EA614',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <NewYearIcon sx={{ color: '#001EA6' }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Preparer une nouvelle annee academique
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#7E7E7E' }}>
+                Creer une annee, reconduire les UEs et assigner les chefs de departement
+              </Typography>
+            </Box>
+            <Button variant="outlined" size="small" sx={{ whiteSpace: 'nowrap' }}>
+              Commencer
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </Box>
   );
 }
