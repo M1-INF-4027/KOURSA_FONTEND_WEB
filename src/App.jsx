@@ -11,6 +11,7 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 const PendingPage = lazy(() => import('./pages/auth/PendingPage'));
 const DashboardPage = lazy(() => import('./pages/shared/DashboardPage'));
 const ProfilePage = lazy(() => import('./pages/shared/ProfilePage'));
+const AcademicPage = lazy(() => import('./pages/shared/AcademicPage'));
 const NotFoundPage = lazy(() => import('./pages/shared/NotFoundPage'));
 
 // Enseignant
@@ -71,6 +72,7 @@ export default function App() {
               {/* Shared */}
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/academique" element={<AcademicPage />} />
 
               {/* Enseignant (default routes — no RoleGuard, accessible to any authenticated user) */}
               <Route path="/fiches" element={<FichesListPage />} />

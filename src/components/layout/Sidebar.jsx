@@ -42,6 +42,7 @@ const menuItems = {
   delegue: [
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
     { label: 'Mes Fiches', path: '/delegue/fiches', icon: <FichesIcon /> },
+    { label: 'Structure', path: '/academique', icon: <SchoolIcon /> },
     { label: 'Profil', path: '/profile', icon: <PersonIcon /> },
   ],
   enseignant: [
