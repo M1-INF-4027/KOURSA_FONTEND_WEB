@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -33,6 +33,36 @@ export default function SetupWizardPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [anneeId, setAnneeId] = useState(null);
   const [finishing, setFinishing] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+
+  // Detecter une configuration en cours pour permettre la reprise
+  useEffect(() => {
+    const detectProgress = async () => {
+      try {
+        const res = await configurationService.getChecklist();
+        const { annee, checklist, est_configuree } = res.data;
+
+        if (annee && !est_configuree) {
+          setAnneeId(annee.id);
+
+          if (checklist.ues_creees) {
+            setActiveStep(4);
+          } else if (checklist.filieres_creees && checklist.niveaux_crees) {
+            setActiveStep(3);
+          } else if (checklist.facultes_creees && checklist.departements_crees) {
+            setActiveStep(2);
+          } else if (checklist.annee_creee) {
+            setActiveStep(1);
+          }
+        }
+      } catch {
+        // Pas de checklist → demarrer normalement
+      } finally {
+        setInitializing(false);
+      }
+    };
+    detectProgress();
+  }, []);
 
   const handleStepAnneeNext = (id) => {
     setAnneeId(id);
@@ -87,6 +117,27 @@ export default function SetupWizardPage() {
         return null;
     }
   };
+
+  if (initializing) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          bgcolor: '#F5F7FA',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress size={48} />
+        <Typography variant="h6" color="text.secondary">
+          Chargement de la configuration...
+        </Typography>
+      </Box>
+    );
+  }
 
   if (finishing) {
     return (
