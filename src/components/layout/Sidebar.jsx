@@ -53,6 +53,7 @@ const menuItems = {
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
     { label: 'Demandes', path: '/chef/delegues', icon: <DeleguesIcon /> },
     { label: 'Utilisateurs', path: '/chef/utilisateurs', icon: <PeopleIcon /> },
+    { label: 'UEs', path: '/chef/ues', icon: <UEIcon /> },
     { label: 'Fiches', path: '/chef/fiches', icon: <FichesIcon /> },
     { label: 'Export', path: '/chef/export', icon: <ExportIcon /> },
     { label: 'Profil', path: '/profile', icon: <PersonIcon /> },

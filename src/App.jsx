@@ -27,6 +27,7 @@ const DeleguesPage = lazy(() => import('./pages/chef/DeleguesPage'));
 const ChefUsersPage = lazy(() => import('./pages/chef/UsersPage'));
 const ChefFichesPage = lazy(() => import('./pages/chef/FichesPage'));
 const ExportPage = lazy(() => import('./pages/chef/ExportPage'));
+const ChefUEsPage = lazy(() => import('./pages/chef/UEsPage'));
 
 // Admin
 const FacultesPage = lazy(() => import('./pages/admin/FacultesPage'));
@@ -87,6 +88,7 @@ export default function App() {
               <Route element={<RoleGuard allowedRoles={['Chef de Département']} />}>
                 <Route path="/chef/delegues" element={<DeleguesPage />} />
                 <Route path="/chef/utilisateurs" element={<ChefUsersPage />} />
+                <Route path="/chef/ues" element={<ChefUEsPage />} />
                 <Route path="/chef/fiches" element={<ChefFichesPage />} />
                 <Route path="/chef/export" element={<ExportPage />} />
               </Route>
