@@ -49,7 +49,7 @@ function EnseignantDashboard() {
     const load = async () => {
       try {
         const res = await fichesSuiviService.getAll();
-        setFiches(res.data);
+        setFiches(Array.isArray(res.data) ? res.data : res.data?.results || []);
       } catch {
         toast.error('Erreur chargement des fiches');
       } finally {
@@ -330,7 +330,7 @@ function DeleGueDashboard() {
     const load = async () => {
       try {
         const res = await fichesSuiviService.getAll();
-        setFiches(res.data);
+        setFiches(Array.isArray(res.data) ? res.data : res.data?.results || []);
       } catch {
         toast.error('Erreur chargement des fiches');
       } finally {
@@ -448,11 +448,14 @@ function AdminDashboard() {
           unitesEnseignementService.getAll(),
           fichesSuiviService.getAll(),
         ]);
+        const users = Array.isArray(usersRes.data) ? usersRes.data : usersRes.data?.results || [];
+        const ues = Array.isArray(uesRes.data) ? uesRes.data : uesRes.data?.results || [];
+        const fiches = Array.isArray(fichesRes.data) ? fichesRes.data : fichesRes.data?.results || [];
         setData({
-          users: usersRes.data.length,
-          ues: uesRes.data.length,
-          fiches: fichesRes.data.length,
-          pending: fichesRes.data.filter((f) => f.statut === 'SOUMISE').length,
+          users: users.length,
+          ues: ues.length,
+          fiches: fiches.length,
+          pending: fiches.filter((f) => f.statut === 'SOUMISE').length,
         });
       } catch {
         toast.error('Erreur chargement des donnees');
