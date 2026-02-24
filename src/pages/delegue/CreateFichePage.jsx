@@ -84,28 +84,23 @@ export default function CreateFichePage() {
         setContenuAborde(fiche.contenu_aborde || '');
 
         // Set UE and enseignant once UEs are loaded
-        const waitForUes = setInterval(() => {
-          setUes((currentUes) => {
-            if (currentUes.length > 0) {
-              clearInterval(waitForUes);
-              const ueId = fiche.ue?.id || fiche.ue;
-              const matchedUe = currentUes.find((u) => u.id === ueId);
-              if (matchedUe) {
-                setSelectedUe(matchedUe);
-                const enseignantId = fiche.enseignant?.id || fiche.enseignant;
-                const matchedEnseignant = (matchedUe.enseignants_details || matchedUe.enseignants || [])
-                  .find((e) => e.id === enseignantId);
-                if (matchedEnseignant) {
-                  setSelectedEnseignant(matchedEnseignant);
-                }
+        // Stocke les ids pour les matcher apres le chargement des UEs
+        const ueId = fiche.ue?.id || fiche.ue;
+        const enseignantId = fiche.enseignant?.id || fiche.enseignant;
+        setUes((currentUes) => {
+          if (currentUes.length > 0) {
+            const matchedUe = currentUes.find((u) => u.id === ueId);
+            if (matchedUe) {
+              setSelectedUe(matchedUe);
+              const matchedEnseignant = (matchedUe.enseignants_details || matchedUe.enseignants || [])
+                .find((e) => e.id === enseignantId);
+              if (matchedEnseignant) {
+                setSelectedEnseignant(matchedEnseignant);
               }
             }
-            return currentUes;
-          });
-        }, 100);
-
-        // Cleanup interval after 5 seconds
-        setTimeout(() => clearInterval(waitForUes), 5000);
+          }
+          return currentUes;
+        });
       } catch {
         toast.error('Fiche introuvable');
         navigate('/delegue/fiches');
