@@ -69,12 +69,17 @@ export default function ChefChecklist() {
 
   if (!data) return null;
 
-  const uesOk = data.ues_sans_enseignant.length === 0;
-  const niveauxOk = data.niveaux_sans_delegue.length === 0;
+  const uesSansEnseignant = data.ues_sans_enseignant || 0;
+  const deleguesEnAttente = data.delegues_en_attente || 0;
+  const totalUes = data.nb_ues || 0;
+  const totalNiveaux = data.nb_niveaux || 0;
+
+  const uesOk = uesSansEnseignant === 0;
+  const niveauxOk = deleguesEnAttente === 0;
   const allGood = uesOk && niveauxOk;
 
-  const uesDone = data.total_ues - data.ues_sans_enseignant.length;
-  const niveauxDone = data.total_niveaux - data.niveaux_sans_delegue.length;
+  const uesDone = totalUes - uesSansEnseignant;
+  const niveauxDone = totalNiveaux - deleguesEnAttente;
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -87,13 +92,13 @@ export default function ChefChecklist() {
           ok={uesOk}
           label="UEs avec enseignant"
           doneCount={uesDone}
-          totalCount={data.total_ues}
+          totalCount={totalUes}
         />
         <ChecklistItem
           ok={niveauxOk}
           label="Niveaux avec delegue"
           doneCount={niveauxDone}
-          totalCount={data.total_niveaux}
+          totalCount={totalNiveaux}
         />
 
         {allGood ? (
