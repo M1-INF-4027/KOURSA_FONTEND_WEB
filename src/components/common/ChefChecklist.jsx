@@ -116,7 +116,7 @@ export default function ChefChecklist() {
               <Button
                 size="small"
                 sx={{ textTransform: 'none', color: ORANGE, fontWeight: 600, justifyContent: 'flex-start' }}
-                onClick={() => navigate('/admin/ues')}
+                onClick={() => navigate('/chef/fiches')}
               >
                 Voir les UEs sans enseignant
               </Button>

@@ -579,6 +579,28 @@ export default function NewYearWizardPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [anneeId, setAnneeId] = useState(null);
   const [finishing, setFinishing] = useState(false);
+  const [initializing, setInitializing] = useState(true);
+
+  // Detecter une configuration en cours pour permettre la reprise
+  useEffect(() => {
+    const detectProgress = async () => {
+      try {
+        const res = await configurationService.getChecklist();
+        const { annee, est_configuree } = res.data;
+
+        if (annee && !est_configuree) {
+          setAnneeId(annee.id);
+          // L'annee existe deja, aller a la reconduction
+          setActiveStep(1);
+        }
+      } catch {
+        // Pas de checklist → demarrer normalement
+      } finally {
+        setInitializing(false);
+      }
+    };
+    detectProgress();
+  }, []);
 
   const handleStepAnneeNext = (id) => {
     setAnneeId(id);
@@ -630,6 +652,26 @@ export default function NewYearWizardPage() {
         return null;
     }
   };
+
+  if (initializing) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 2,
+          py: 12,
+        }}
+      >
+        <CircularProgress size={48} sx={{ color: '#001EA6' }} />
+        <Typography variant="h6" color="text.secondary">
+          Chargement...
+        </Typography>
+      </Box>
+    );
+  }
 
   if (finishing) {
     return (
