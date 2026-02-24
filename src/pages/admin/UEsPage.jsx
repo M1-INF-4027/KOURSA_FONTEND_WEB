@@ -25,7 +25,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 export default function UEsPage() {
-  const { anneeActive } = useConfig();
+  const { anneeActive, refreshKey } = useConfig();
   const [items, setItems] = useState([]);
   const [enseignants, setEnseignants] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
@@ -60,7 +60,7 @@ export default function UEsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [refreshKey]);
 
   const handleOpen = (item = null) => {
     setEditing(item);

@@ -41,6 +41,7 @@ import banniere from '../../assets/banniere.png';
 
 function EnseignantDashboard() {
   const navigate = useNavigate();
+  const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +57,7 @@ function EnseignantDashboard() {
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   const pending = fiches.filter((f) => f.statut === 'SOUMISE');
   const validated = fiches.filter((f) => f.statut === 'VALIDEE');
@@ -154,6 +155,7 @@ function EnseignantDashboard() {
 }
 
 function ChefDashboard() {
+  const { refreshKey } = useConfig();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedFiliere, setSelectedFiliere] = useState('');
@@ -174,7 +176,7 @@ function ChefDashboard() {
 
   useEffect(() => {
     loadStats(selectedFiliere, selectedNiveau, selectedSemestre);
-  }, [selectedFiliere, selectedNiveau, selectedSemestre]);
+  }, [selectedFiliere, selectedNiveau, selectedSemestre, refreshKey]);
 
   // Filter niveaux by selected filiere
   const filteredNiveaux = selectedFiliere
@@ -320,6 +322,7 @@ function ChefDashboard() {
 
 function DeleGueDashboard() {
   const navigate = useNavigate();
+  const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -335,7 +338,7 @@ function DeleGueDashboard() {
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   const soumises = fiches.filter((f) => f.statut === 'SOUMISE');
   const validees = fiches.filter((f) => f.statut === 'VALIDEE');
@@ -433,7 +436,7 @@ function DeleGueDashboard() {
 
 function AdminDashboard() {
   const navigate = useNavigate();
-  const { anneeActive, semestreActif, isConfigured } = useConfig();
+  const { anneeActive, semestreActif, isConfigured, refreshKey } = useConfig();
   const [data, setData] = useState({ users: 0, ues: 0, fiches: 0, pending: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -458,7 +461,7 @@ function AdminDashboard() {
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   if (loading) return <DashboardSkeleton count={4} />;
 

@@ -38,7 +38,6 @@ export default function YearSemesterSelector() {
       await configurationService.activerSemestre(semestre.id);
       await refresh();
       toast.success(`Semestre ${semestre.numero} active`);
-      window.location.reload();
     } catch {
       toast.error('Erreur lors du changement de semestre');
     } finally {

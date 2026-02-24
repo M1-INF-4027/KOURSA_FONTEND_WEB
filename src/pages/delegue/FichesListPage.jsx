@@ -24,6 +24,7 @@ import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
 import { fichesSuiviService } from '../../api/services';
+import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 const tabs = [
@@ -35,6 +36,7 @@ const tabs = [
 
 export default function FichesListPage() {
   const navigate = useNavigate();
+  const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('ALL');
@@ -54,7 +56,7 @@ export default function FichesListPage() {
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   const filtered = useMemo(() => {
     let result = fiches;

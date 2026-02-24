@@ -8,6 +8,7 @@ export function ConfigProvider({ children }) {
   const { isAuth } = useAuth();
   const [config, setConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const refresh = useCallback(async () => {
     if (!isAuth) {
@@ -18,6 +19,7 @@ export function ConfigProvider({ children }) {
     try {
       const res = await configurationService.getStatus();
       setConfig(res.data);
+      setRefreshKey((k) => k + 1);
     } catch {
       setConfig(null);
     } finally {
@@ -38,6 +40,7 @@ export function ConfigProvider({ children }) {
       semestreActif: config?.semestre_actif || null,
       toutesAnnees: config?.toutes_annees || [],
       refresh,
+      refreshKey,
     }}>
       {children}
     </ConfigContext.Provider>

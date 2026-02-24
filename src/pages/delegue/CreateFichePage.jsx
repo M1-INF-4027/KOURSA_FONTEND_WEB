@@ -38,6 +38,7 @@ export default function CreateFichePage() {
   const [loadingFiche, setLoadingFiche] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
 
+  const [ficheStatut, setFicheStatut] = useState(null);
   const [selectedUe, setSelectedUe] = useState(null);
   const [selectedEnseignant, setSelectedEnseignant] = useState(null);
   const [dateCours, setDateCours] = useState(null);
@@ -75,6 +76,7 @@ export default function CreateFichePage() {
       try {
         const res = await fichesSuiviService.getById(id);
         const fiche = res.data;
+        setFicheStatut(fiche.statut);
         setDateCours(fiche.date_cours ? dayjs(fiche.date_cours) : null);
         setHeureDebut(fiche.heure_debut ? dayjs(`2000-01-01T${fiche.heure_debut}`) : null);
         setHeureFin(fiche.heure_fin ? dayjs(`2000-01-01T${fiche.heure_fin}`) : null);
@@ -120,8 +122,11 @@ export default function CreateFichePage() {
       newErrors.dateCours = 'Veuillez selectionner une date';
     } else {
       const maxDate = dayjs().add(7, 'day');
+      const minDate = dayjs().subtract(30, 'day');
       if (dateCours.isAfter(maxDate, 'day')) {
         newErrors.dateCours = 'La date ne peut pas depasser 7 jours dans le futur';
+      } else if (dateCours.isBefore(minDate, 'day')) {
+        newErrors.dateCours = 'La date ne peut pas etre plus de 30 jours dans le passe';
       }
     }
     if (!heureDebut) newErrors.heureDebut = 'Veuillez selectionner l\'heure de debut';
@@ -156,8 +161,10 @@ export default function CreateFichePage() {
 
       if (isEdit) {
         await fichesSuiviService.update(id, data);
-        await fichesSuiviService.resoumettre(id);
-        toast.success('Fiche resoumise avec succes');
+        if (ficheStatut === 'REFUSEE') {
+          await fichesSuiviService.resoumettre(id);
+        }
+        toast.success(ficheStatut === 'REFUSEE' ? 'Fiche resoumise avec succes' : 'Fiche modifiee avec succes');
         navigate(`/delegue/fiches/${id}`);
       } else {
         await fichesSuiviService.create(data);
@@ -263,6 +270,7 @@ export default function CreateFichePage() {
                   label="Date du cours"
                   value={dateCours}
                   onChange={(value) => setDateCours(value)}
+                  minDate={dayjs().subtract(30, 'day')}
                   maxDate={dayjs().add(7, 'day')}
                   slotProps={{
                     textField: {

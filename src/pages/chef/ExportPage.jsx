@@ -29,6 +29,7 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import { dashboardService, unitesEnseignementService, usersService } from '../../api/services';
+import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 function downloadBlob(res, fallbackName) {
@@ -47,6 +48,7 @@ function downloadBlob(res, fallbackName) {
 }
 
 export default function ExportPage() {
+  const { refreshKey } = useConfig();
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [selectedFiliere, setSelectedFiliere] = useState('');
@@ -78,7 +80,7 @@ export default function ExportPage() {
       } catch { /* ignore */ }
     };
     loadData();
-  }, []);
+  }, [refreshKey]);
 
   // Build filters object
   const filters = {
@@ -103,7 +105,7 @@ export default function ExportPage() {
 
   useEffect(() => {
     loadRecap();
-  }, [dateDebut, dateFin, selectedFiliere, selectedNiveau, selectedSemestre]);
+  }, [dateDebut, dateFin, selectedFiliere, selectedNiveau, selectedSemestre, refreshKey]);
 
   // Filter niveaux by selected filiere
   const filteredNiveaux = selectedFiliere

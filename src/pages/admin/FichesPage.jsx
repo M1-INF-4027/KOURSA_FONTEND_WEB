@@ -20,9 +20,11 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import { fichesSuiviService } from '../../api/services';
+import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 export default function AdminFichesPage() {
+  const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('ALL');
@@ -40,7 +42,7 @@ export default function AdminFichesPage() {
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   const filtered = useMemo(() => {
     if (tab === 'ALL') return fiches;
