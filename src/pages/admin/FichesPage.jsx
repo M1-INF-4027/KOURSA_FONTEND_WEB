@@ -15,11 +15,13 @@ import {
   Grid,
   Typography,
   Divider,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
-import { fichesSuiviService } from '../../api/services';
+import { fichesSuiviService, departementsService, filieresService, niveauxService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
@@ -30,11 +32,27 @@ export default function AdminFichesPage() {
   const [tab, setTab] = useState('ALL');
   const [selected, setSelected] = useState(null);
 
+  // Hierarchical filters
+  const [departements, setDepartements] = useState([]);
+  const [filieres, setFilieres] = useState([]);
+  const [niveaux, setNiveaux] = useState([]);
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedFiliere, setSelectedFiliere] = useState('');
+  const [selectedNiveau, setSelectedNiveau] = useState('');
+
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fichesSuiviService.getAll();
-        setFiches(res.data);
+        const [fichesRes, deptRes, filRes, nivRes] = await Promise.all([
+          fichesSuiviService.getAll(),
+          departementsService.getAll(),
+          filieresService.getAll(),
+          niveauxService.getAll(),
+        ]);
+        setFiches(fichesRes.data);
+        setDepartements(deptRes.data);
+        setFilieres(filRes.data);
+        setNiveaux(nivRes.data);
       } catch {
         toast.error('Erreur chargement des fiches');
       } finally {
@@ -44,10 +62,63 @@ export default function AdminFichesPage() {
     load();
   }, [refreshKey]);
 
+  // Cascade: filter filieres by selected dept
+  const filteredFilieres = selectedDept
+    ? filieres.filter((f) => f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
+    : filieres;
+
+  // Cascade: filter niveaux by selected filiere
+  const filteredNiveaux = selectedFiliere
+    ? niveaux.filter((n) => n.filiere === Number(selectedFiliere) || n.filiere_id === Number(selectedFiliere))
+    : selectedDept
+      ? niveaux.filter((n) => filteredFilieres.some((f) => (f.id === n.filiere || f.id === n.filiere_id)))
+      : niveaux;
+
+  const handleDeptChange = (val) => {
+    setSelectedDept(val);
+    setSelectedFiliere('');
+    setSelectedNiveau('');
+  };
+
+  const handleFiliereChange = (val) => {
+    setSelectedFiliere(val);
+    setSelectedNiveau('');
+  };
+
   const filtered = useMemo(() => {
-    if (tab === 'ALL') return fiches;
-    return fiches.filter((f) => f.statut === tab);
-  }, [fiches, tab]);
+    let result = fiches;
+
+    // Status filter
+    if (tab !== 'ALL') {
+      result = result.filter((f) => f.statut === tab);
+    }
+
+    // Hierarchical filters using niveaux_details
+    if (selectedNiveau) {
+      const niv = niveaux.find((n) => n.id === Number(selectedNiveau));
+      if (niv) {
+        const nivName = niv.nom_niveau;
+        result = result.filter((f) =>
+          f.niveaux_details?.some((nd) => nd.nom_niveau === nivName)
+        );
+      }
+    } else if (selectedFiliere) {
+      const fil = filieres.find((f) => f.id === Number(selectedFiliere));
+      if (fil) {
+        const filName = fil.nom_filiere;
+        result = result.filter((f) =>
+          f.niveaux_details?.some((nd) => nd.filiere_nom === filName)
+        );
+      }
+    } else if (selectedDept) {
+      const deptFiliereNames = filteredFilieres.map((f) => f.nom_filiere);
+      result = result.filter((f) =>
+        f.niveaux_details?.some((nd) => deptFiliereNames.includes(nd.filiere_nom))
+      );
+    }
+
+    return result;
+  }, [fiches, tab, selectedDept, selectedFiliere, selectedNiveau, niveaux, filieres, filteredFilieres]);
 
   const columns = [
     { field: 'code_ue', label: 'UE', render: (r) => <strong>{r.code_ue || r.ue?.code_ue || '-'}</strong> },
@@ -86,6 +157,64 @@ export default function AdminFichesPage() {
   return (
     <Box className="fade-in">
       <PageHeader title="Toutes les fiches" description="Vue globale de toutes les fiches de suivi" />
+
+      {/* Filtres hierarchiques */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600, color: '#7E7E7E' }}>
+            Filtrer par structure
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Departement"
+                value={selectedDept}
+                onChange={(e) => handleDeptChange(e.target.value)}
+                size="small"
+              >
+                <MenuItem value="">Tous les departements</MenuItem>
+                {departements.map((d) => (
+                  <MenuItem key={d.id} value={d.id}>{d.nom_departement}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Filiere"
+                value={selectedFiliere}
+                onChange={(e) => handleFiliereChange(e.target.value)}
+                size="small"
+                disabled={filteredFilieres.length === 0}
+              >
+                <MenuItem value="">Toutes les filieres</MenuItem>
+                {filteredFilieres.map((f) => (
+                  <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                select
+                fullWidth
+                label="Niveau"
+                value={selectedNiveau}
+                onChange={(e) => setSelectedNiveau(e.target.value)}
+                size="small"
+                disabled={filteredNiveaux.length === 0}
+              >
+                <MenuItem value="">Tous les niveaux</MenuItem>
+                {filteredNiveaux.map((n) => (
+                  <MenuItem key={n.id} value={n.id}>{n.nom_niveau}</MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent sx={{ p: 0 }}>

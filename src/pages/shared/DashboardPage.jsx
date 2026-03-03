@@ -27,6 +27,8 @@ import {
   MenuBook as UEIcon,
   Warning as WarningIcon,
   AutorenewRounded as NewYearIcon,
+  Cancel as RefusedIcon,
+  Business as DeptIcon,
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import StatsCard from '../../components/common/StatsCard';
@@ -437,26 +439,20 @@ function DeleGueDashboard() {
 function AdminDashboard() {
   const navigate = useNavigate();
   const { anneeActive, semestreActif, isConfigured, refreshKey } = useConfig();
-  const [data, setData] = useState({ users: 0, ues: 0, fiches: 0, pending: 0 });
+  const [overview, setOverview] = useState(null);
+  const [recentFiches, setRecentFiches] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [usersRes, uesRes, fichesRes] = await Promise.all([
-          usersService.getAll(),
-          unitesEnseignementService.getAll(),
+        const [overviewRes, fichesRes] = await Promise.all([
+          dashboardService.getAdminOverview(),
           fichesSuiviService.getAll(),
         ]);
-        const users = Array.isArray(usersRes.data) ? usersRes.data : usersRes.data?.results || [];
-        const ues = Array.isArray(uesRes.data) ? uesRes.data : uesRes.data?.results || [];
+        setOverview(overviewRes.data);
         const fiches = Array.isArray(fichesRes.data) ? fichesRes.data : fichesRes.data?.results || [];
-        setData({
-          users: users.length,
-          ues: ues.length,
-          fiches: fiches.length,
-          pending: fiches.filter((f) => f.statut === 'SOUMISE').length,
-        });
+        setRecentFiches(fiches.filter((f) => f.statut === 'SOUMISE').slice(0, 5));
       } catch {
         toast.error('Erreur chargement des donnees');
       } finally {
@@ -467,6 +463,16 @@ function AdminDashboard() {
   }, [refreshKey]);
 
   if (loading) return <DashboardSkeleton count={4} />;
+
+  const totaux = overview?.totaux || { total: 0, soumises: 0, validees: 0, refusees: 0 };
+  const departements = overview?.departements || [];
+
+  const chartData = departements.map((d) => ({
+    name: d.nom,
+    total: d.total,
+    validees: d.validees,
+    soumises: d.soumises,
+  }));
 
   return (
     <Box className="fade-in">
@@ -488,20 +494,128 @@ function AdminDashboard() {
         </Card>
       )}
 
+      {/* Stats cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatsCard title="Utilisateurs" value={data.users} icon={<PeopleIcon />} color="#001EA6" />
+          <StatsCard title="Total fiches" value={totaux.total} icon={<FichesIcon />} color="#001EA6" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatsCard title="Unites d'enseignement" value={data.ues} icon={<UEIcon />} color="#3B82F6" />
+          <StatsCard title="En attente" value={totaux.soumises} icon={<PendingIcon />} color="#F7B016" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatsCard title="Total fiches" value={data.fiches} icon={<FichesIcon />} color="#10B981" />
+          <StatsCard title="Validees" value={totaux.validees} icon={<CheckIcon />} color="#10B981" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatsCard title="Fiches en attente" value={data.pending} icon={<PendingIcon />} color="#F7B016" />
+          <StatsCard title="Refusees" value={totaux.refusees} icon={<RefusedIcon />} color="#EF4444" />
         </Grid>
       </Grid>
+
+      {/* Tableau departements */}
+      {departements.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+              <DeptIcon sx={{ fontSize: 20, mr: 1, verticalAlign: 'text-bottom' }} />
+              Fiches par departement
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Departement</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Faculte</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Chef</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Soumises</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Validees</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Refusees</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 700 }}>Total</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {departements.map((d) => (
+                    <TableRow key={d.id} hover>
+                      <TableCell sx={{ fontWeight: 600 }}>{d.nom}</TableCell>
+                      <TableCell>{d.faculte || '-'}</TableCell>
+                      <TableCell>{d.chef || <Chip label="Non assigne" size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontSize: '0.7rem' }} />}</TableCell>
+                      <TableCell align="center">
+                        <Chip label={d.soumises} size="small" sx={{ bgcolor: '#FEF3C7', color: '#D97706', fontWeight: 700, minWidth: 36 }} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip label={d.validees} size="small" sx={{ bgcolor: '#D1FAE5', color: '#059669', fontWeight: 700, minWidth: 36 }} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip label={d.refusees} size="small" sx={{ bgcolor: '#FEE2E2', color: '#DC2626', fontWeight: 700, minWidth: 36 }} />
+                      </TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 700 }}>{d.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bar chart */}
+      {chartData.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
+              Fiches par departement
+            </Typography>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="validees" name="Validees" fill="#10B981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="soumises" name="Soumises" fill="#F7B016" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Fiches recentes */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Dernieres fiches soumises</Typography>
+          {recentFiches.length === 0 ? (
+            <EmptyState message="Aucune fiche en attente" />
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>UE</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Chapitre</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Enseignant</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Statut</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {recentFiches.map((f) => (
+                    <TableRow
+                      key={f.id}
+                      hover
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => navigate('/admin/fiches')}
+                    >
+                      <TableCell sx={{ fontWeight: 600 }}>{f.code_ue || f.ue?.code_ue || '-'}</TableCell>
+                      <TableCell>{f.titre_chapitre}</TableCell>
+                      <TableCell>{f.nom_enseignant || '-'}</TableCell>
+                      <TableCell>{f.date_cours}</TableCell>
+                      <TableCell><StatusBadge status={f.statut} /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Action nouvelle annee */}
       {isConfigured && (

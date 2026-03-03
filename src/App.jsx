@@ -17,6 +17,7 @@ const NotFoundPage = lazy(() => import('./pages/shared/NotFoundPage'));
 // Enseignant
 const FichesListPage = lazy(() => import('./pages/enseignant/FichesListPage'));
 const FicheDetailPage = lazy(() => import('./pages/enseignant/FicheDetailPage'));
+const MesDeleguesPage = lazy(() => import('./pages/enseignant/MesDeleguesPage'));
 
 // Delegue
 const DeleGueFichesListPage = lazy(() => import('./pages/delegue/FichesListPage'));
@@ -41,6 +42,7 @@ const AdminFichesPage = lazy(() => import('./pages/admin/FichesPage'));
 const SetupWizardPage = lazy(() => import('./pages/admin/SetupWizardPage'));
 const NewYearWizardPage = lazy(() => import('./pages/admin/NewYearWizardPage'));
 const AnneesPage = lazy(() => import('./pages/admin/AnneesPage'));
+const AdminExportPage = lazy(() => import('./pages/admin/ExportPage'));
 
 function Loading() {
   return (
@@ -77,6 +79,7 @@ export default function App() {
               {/* Enseignant (default routes — no RoleGuard, accessible to any authenticated user) */}
               <Route path="/fiches" element={<FichesListPage />} />
               <Route path="/fiches/:id" element={<FicheDetailPage />} />
+              <Route path="/enseignant/delegues" element={<MesDeleguesPage />} />
 
               {/* Delegue */}
               <Route element={<RoleGuard allowedRoles={['Délégué']} />}>
@@ -104,6 +107,7 @@ export default function App() {
                 <Route path="/admin/ues" element={<UEsPage />} />
                 <Route path="/admin/utilisateurs" element={<AdminUsersPage />} />
                 <Route path="/admin/fiches" element={<AdminFichesPage />} />
+                <Route path="/admin/export" element={<AdminExportPage />} />
                 <Route path="/admin/annees" element={<AnneesPage />} />
                 <Route path="/admin/nouvelle-annee" element={<NewYearWizardPage />} />
               </Route>

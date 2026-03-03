@@ -24,13 +24,14 @@ export const authService = {
 };
 
 // ==================== DASHBOARD ====================
-function buildDashboardParams({ dateDebut, dateFin, filiere, niveau, semestre } = {}) {
+function buildDashboardParams({ dateDebut, dateFin, filiere, niveau, semestre, departement } = {}) {
   const params = new URLSearchParams();
   if (dateDebut) params.append('date_debut', dateDebut);
   if (dateFin) params.append('date_fin', dateFin);
   if (filiere) params.append('filiere', filiere);
   if (niveau) params.append('niveau', niveau);
   if (semestre) params.append('semestre', semestre);
+  if (departement) params.append('departement', departement);
   return params;
 }
 
@@ -64,6 +65,7 @@ export const dashboardService = {
     if (mois) params.append('mois', mois.toString());
     return api.get(`/dashboard/export-heures/?${params.toString()}`, { responseType: 'blob' });
   },
+  getAdminOverview: () => api.get('/dashboard/admin-overview/'),
 };
 
 // ==================== USERS ====================
@@ -126,6 +128,7 @@ export const unitesEnseignementService = {
   create: (data) => api.post('/teaching/unites-enseignement/', data),
   update: (id, data) => api.patch(`/teaching/unites-enseignement/${id}/`, data),
   delete: (id) => api.delete(`/teaching/unites-enseignement/${id}/`),
+  getMesDelegues: () => api.get('/teaching/unites-enseignement/mes-delegues/'),
 };
 
 // ==================== CONFIGURATION ====================
