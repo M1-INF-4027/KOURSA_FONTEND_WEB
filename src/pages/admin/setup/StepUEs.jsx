@@ -143,7 +143,7 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
       const data = {
         code_ue: form.code_ue.trim(),
         libelle_ue: form.libelle_ue.trim(),
-        semestre: form.semestre || getSemestreId(form.semestreType),
+        semestre_obj: form.semestre || getSemestreId(form.semestreType) || null,
         enseignants: form.enseignants.map((e) => (typeof e === 'object' ? e.id : e)),
         niveaux: form.niveaux.map((n) => (typeof n === 'object' ? n.id : n)),
       };
@@ -159,12 +159,17 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
       load();
     } catch (err) {
       const detail = err.response?.data;
-      if (detail && typeof detail === 'object') {
-        const messages = Object.values(detail).flat().join(', ');
-        toast.error(messages || 'Erreur lors de la sauvegarde');
-      } else {
-        toast.error('Erreur lors de la sauvegarde');
+      let msg = 'Erreur lors de la sauvegarde';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (detail?.detail) {
+        msg = detail.detail;
+      } else if (detail?.non_field_errors?.[0]) {
+        msg = detail.non_field_errors[0];
+      } else if (detail && typeof detail === 'object') {
+        msg = Object.entries(detail).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`).join(' | ');
       }
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

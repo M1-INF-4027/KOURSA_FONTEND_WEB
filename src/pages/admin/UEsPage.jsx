@@ -111,10 +111,16 @@ export default function UEsPage() {
       load();
     } catch (err) {
       const detail = err.response?.data;
-      const msg = typeof detail === 'string' ? detail
-        : detail?.detail || detail?.non_field_errors?.[0]
-        || Object.values(detail || {}).flat().join(', ')
-        || 'Erreur sauvegarde';
+      let msg = 'Erreur sauvegarde';
+      if (typeof detail === 'string') {
+        msg = detail;
+      } else if (detail?.detail) {
+        msg = detail.detail;
+      } else if (detail?.non_field_errors?.[0]) {
+        msg = detail.non_field_errors[0];
+      } else if (detail && typeof detail === 'object') {
+        msg = Object.entries(detail).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`).join(' | ');
+      }
       toast.error(msg);
     } finally {
       setSaving(false);
