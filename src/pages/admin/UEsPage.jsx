@@ -53,8 +53,12 @@ export default function UEsPage() {
       setNiveaux(nivRes.data);
       const semData = Array.isArray(semRes.data?.results) ? semRes.data.results : (Array.isArray(semRes.data) ? semRes.data : []);
       setSemestres(semData);
-    } catch {
-      toast.error('Erreur chargement');
+    } catch (err) {
+      if (err.response?.status === 401) {
+        toast.error('Session expiree, veuillez vous reconnecter');
+      } else {
+        toast.error('Erreur chargement des donnees');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,9 +66,15 @@ export default function UEsPage() {
 
   useEffect(() => { load(); }, [refreshKey]);
 
+  const handleClose = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm({ code_ue: '', libelle_ue: '', semestre_obj: '', enseignants: [], niveaux: [] });
+  };
+
   const handleOpen = (item = null) => {
-    setEditing(item);
-    if (item) {
+    if (item && item.id) {
+      setEditing(item);
       setForm({
         code_ue: item.code_ue || '',
         libelle_ue: item.libelle_ue || '',
@@ -73,6 +83,7 @@ export default function UEsPage() {
         niveaux: item.niveaux || [],
       });
     } else {
+      setEditing(null);
       setForm({ code_ue: '', libelle_ue: '', semestre_obj: semestres[0]?.id || '', enseignants: [], niveaux: [] });
     }
     setDialogOpen(true);
@@ -89,17 +100,22 @@ export default function UEsPage() {
         enseignants: form.enseignants.map((e) => (typeof e === 'object' ? e.id : e)),
         niveaux: form.niveaux.map((n) => (typeof n === 'object' ? n.id : n)),
       };
-      if (editing) {
+      if (editing && editing.id) {
         await unitesEnseignementService.update(editing.id, data);
         toast.success('UE modifiee');
       } else {
         await unitesEnseignementService.create(data);
         toast.success('UE creee');
       }
-      setDialogOpen(false);
+      handleClose();
       load();
-    } catch {
-      toast.error('Erreur sauvegarde');
+    } catch (err) {
+      const detail = err.response?.data;
+      const msg = typeof detail === 'string' ? detail
+        : detail?.detail || detail?.non_field_errors?.[0]
+        || Object.values(detail || {}).flat().join(', ')
+        || 'Erreur sauvegarde';
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -207,7 +223,7 @@ export default function UEsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>
           {editing ? 'Modifier l\'UE' : 'Nouvelle UE'}
         </DialogTitle>
@@ -257,9 +273,9 @@ export default function UEsPage() {
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDialogOpen(false)} color="inherit">Annuler</Button>
+          <Button onClick={handleClose} color="inherit">Annuler</Button>
           <Button onClick={handleSave} variant="contained" disabled={saving || !form.code_ue.trim() || !form.libelle_ue.trim()}>
-            {saving ? 'Sauvegarde...' : 'Enregistrer'}
+            {saving ? 'Sauvegarde...' : (editing ? 'Modifier' : 'Creer')}
           </Button>
         </DialogActions>
       </Dialog>

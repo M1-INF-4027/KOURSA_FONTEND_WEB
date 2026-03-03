@@ -90,9 +90,15 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
     return '-';
   };
 
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setEditing(null);
+    setForm({ code_ue: '', libelle_ue: '', semestre: '', semestreType: 'S1', enseignants: [], niveaux: [] });
+  };
+
   const openDialog = (ue = null) => {
-    setEditing(ue);
-    if (ue) {
+    if (ue && ue.id) {
+      setEditing(ue);
       const sem = semestres.find((s) => s.id === ue.semestre);
       const sType = sem?.numero === 2 ? 'S2' : 'S1';
       setForm({
@@ -104,6 +110,7 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
         niveaux: ue.niveaux_details || ue.niveaux || [],
       });
     } else {
+      setEditing(null);
       setForm({
         code_ue: '',
         libelle_ue: '',
@@ -141,14 +148,14 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
         niveaux: form.niveaux.map((n) => (typeof n === 'object' ? n.id : n)),
       };
 
-      if (editing) {
+      if (editing && editing.id) {
         await unitesEnseignementService.update(editing.id, data);
         toast.success('UE modifiee');
       } else {
         await unitesEnseignementService.create(data);
         toast.success('UE creee');
       }
-      setDialogOpen(false);
+      closeDialog();
       load();
     } catch (err) {
       const detail = err.response?.data;
@@ -307,7 +314,7 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
       </Box>
 
       {/* UE Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>
           {editing ? 'Modifier l\'UE' : 'Nouvelle UE'}
         </DialogTitle>
@@ -410,13 +417,13 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDialogOpen(false)} color="inherit">Annuler</Button>
+          <Button onClick={closeDialog} color="inherit">Annuler</Button>
           <Button
             onClick={handleSave}
             variant="contained"
             disabled={saving || !form.code_ue.trim() || !form.libelle_ue.trim()}
           >
-            {saving ? <CircularProgress size={20} color="inherit" /> : 'Enregistrer'}
+            {saving ? <CircularProgress size={20} color="inherit" /> : (editing ? 'Modifier' : 'Creer')}
           </Button>
         </DialogActions>
       </Dialog>
