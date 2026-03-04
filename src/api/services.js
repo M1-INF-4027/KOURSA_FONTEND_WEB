@@ -66,6 +66,8 @@ export const dashboardService = {
     return api.get(`/dashboard/export-heures/?${params.toString()}`, { responseType: 'blob' });
   },
   getAdminOverview: () => api.get('/dashboard/admin-overview/'),
+  getWeeklyTracking: (semaine) => api.get(`/dashboard/weekly-tracking/${semaine ? `?semaine=${semaine}` : ''}`),
+  getEnseignantWeeklyTracking: (semaine) => api.get(`/dashboard/enseignant-weekly-tracking/${semaine ? `?semaine=${semaine}` : ''}`),
 };
 
 // ==================== USERS ====================
@@ -84,6 +86,14 @@ export const usersService = {
 export const rolesService = {
   getAll: () => fetchAll('/users/roles/'),
   getById: (id) => api.get(`/users/roles/${id}/`),
+};
+
+// ==================== WHITELIST ====================
+export const whitelistService = {
+  getAll: () => fetchAll('/users/whitelist/'),
+  create: (data) => api.post('/users/whitelist/', data),
+  bulkCreate: (data) => api.post('/users/whitelist/bulk/', data),
+  delete: (id) => api.delete(`/users/whitelist/${id}/`),
 };
 
 // ==================== ACADEMIC ====================
@@ -162,6 +172,12 @@ export const anneesAcademiquesService = {
 
 export const semestresService = {
   getAll: (params) => api.get('/academic/semestres/', { params }),
+};
+
+// ==================== ALERTS ====================
+export const alertsService = {
+  alertEnseignant: (data) => api.post('/notifications/alert-enseignant/', data),
+  alertDelegue: (data) => api.post('/notifications/alert-delegue/', data),
 };
 
 export const fichesSuiviService = {

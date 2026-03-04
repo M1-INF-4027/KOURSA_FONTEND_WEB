@@ -30,6 +30,8 @@ const ChefUsersPage = lazy(() => import('./pages/chef/UsersPage'));
 const ChefFichesPage = lazy(() => import('./pages/chef/FichesPage'));
 const ExportPage = lazy(() => import('./pages/chef/ExportPage'));
 const ChefUEsPage = lazy(() => import('./pages/chef/UEsPage'));
+const WeeklyTrackingPage = lazy(() => import('./pages/chef/WeeklyTrackingPage'));
+const WhitelistPage = lazy(() => import('./pages/chef/WhitelistPage'));
 
 // Admin
 const FacultesPage = lazy(() => import('./pages/admin/FacultesPage'));
@@ -97,6 +99,8 @@ export default function App() {
                 <Route path="/chef/ues" element={<ChefUEsPage />} />
                 <Route path="/chef/fiches" element={<ChefFichesPage />} />
                 <Route path="/chef/export" element={<ExportPage />} />
+                <Route path="/chef/suivi-hebdo" element={<WeeklyTrackingPage />} />
+                <Route path="/chef/whitelist" element={<WhitelistPage />} />
               </Route>
 
               {/* Super Admin */}

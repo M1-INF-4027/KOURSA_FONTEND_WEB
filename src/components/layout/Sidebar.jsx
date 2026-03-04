@@ -54,10 +54,12 @@ const menuItems = {
   ],
   chef: [
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+    { label: 'Suivi hebdo', path: '/chef/suivi-hebdo', icon: <CalendarIcon /> },
     { label: 'Demandes', path: '/chef/delegues', icon: <DeleguesIcon /> },
     { label: 'Utilisateurs', path: '/chef/utilisateurs', icon: <PeopleIcon /> },
     { label: 'UEs', path: '/chef/ues', icon: <UEIcon /> },
     { label: 'Fiches', path: '/chef/fiches', icon: <FichesIcon /> },
+    { label: 'Emails autorises', path: '/chef/whitelist', icon: <DeleguesIcon /> },
     { label: 'Export', path: '/chef/export', icon: <ExportIcon /> },
     { label: 'Profil', path: '/profile', icon: <PersonIcon /> },
   ],

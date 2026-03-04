@@ -35,7 +35,7 @@ import StatsCard from '../../components/common/StatsCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
-import { fichesSuiviService, dashboardService, usersService, unitesEnseignementService } from '../../api/services';
+import { fichesSuiviService, dashboardService, usersService, unitesEnseignementService, alertsService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import ChefChecklist from '../../components/common/ChefChecklist';
 import toast from 'react-hot-toast';
@@ -46,12 +46,18 @@ function EnseignantDashboard() {
   const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [weeklyData, setWeeklyData] = useState(null);
+  const [alertLoading, setAlertLoading] = useState(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fichesSuiviService.getAll();
-        setFiches(Array.isArray(res.data) ? res.data : res.data?.results || []);
+        const [fichesRes, weeklyRes] = await Promise.all([
+          fichesSuiviService.getAll(),
+          dashboardService.getEnseignantWeeklyTracking().catch(() => null),
+        ]);
+        setFiches(Array.isArray(fichesRes.data) ? fichesRes.data : fichesRes.data?.results || []);
+        if (weeklyRes) setWeeklyData(weeklyRes.data);
       } catch {
         toast.error('Erreur chargement des fiches');
       } finally {
@@ -65,7 +71,26 @@ function EnseignantDashboard() {
   const validated = fiches.filter((f) => f.statut === 'VALIDEE');
   const recentPending = pending.slice(0, 5);
 
+  const handleAlertDelegue = async (delegue, ue) => {
+    setAlertLoading(ue.id);
+    try {
+      await alertsService.alertDelegue({
+        delegue_id: delegue.id,
+        ue_id: ue.id,
+        semaine: weeklyData?.semaine,
+      });
+      toast.success(`Rappel envoye a ${delegue.nom}`);
+    } catch {
+      toast.error("Erreur lors de l'envoi du rappel");
+    } finally {
+      setAlertLoading(null);
+    }
+  };
+
   if (loading) return <DashboardSkeleton count={2} />;
+
+  const weeklyStats = weeklyData?.stats;
+  const weeklyUes = weeklyData?.ues || [];
 
   return (
     <Box className="fade-in">
@@ -103,6 +128,74 @@ function EnseignantDashboard() {
           <StatsCard title="Fiches validees" value={validated.length} icon={<CheckIcon />} color="#10B981" />
         </Grid>
       </Grid>
+
+      {/* Suivi de la semaine */}
+      {weeklyStats && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Suivi de la semaine</Typography>
+              <Chip
+                label={`${(weeklyStats.validees || 0) + (weeklyStats.soumises || 0)}/${weeklyStats.total || 0} cours couverts`}
+                size="small"
+                sx={{ bgcolor: '#001EA614', color: '#001EA6', fontWeight: 600 }}
+              />
+            </Box>
+            {weeklyUes.length === 0 ? (
+              <Typography variant="body2" sx={{ color: '#7E7E7E' }}>Aucune UE cette semaine.</Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {weeklyUes.map((ue) => {
+                  const isManquante = ue.statut === 'aucune_fiche';
+                  const cfg = {
+                    validee: { label: 'Validee', color: '#10B981', bg: '#D1FAE5' },
+                    soumise: { label: 'Soumise', color: '#D97706', bg: '#FEF3C7' },
+                    aucune_fiche: { label: 'Manquante', color: '#DC2626', bg: '#FEE2E2' },
+                  }[ue.statut];
+
+                  return (
+                    <Box
+                      key={ue.id}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: '1px solid #EFEFEF',
+                      }}
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {ue.code_ue} - {ue.libelle_ue}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#7E7E7E' }}>
+                          {ue.niveaux?.join(', ')}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip label={cfg.label} size="small" sx={{ bgcolor: cfg.bg, color: cfg.color, fontWeight: 600 }} />
+                        {isManquante && ue.delegues?.length > 0 && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="warning"
+                            disabled={alertLoading === ue.id}
+                            onClick={() => handleAlertDelegue(ue.delegues[0], ue)}
+                            sx={{ textTransform: 'none', fontSize: '0.7rem', minWidth: 'auto' }}
+                          >
+                            {alertLoading === ue.id ? '...' : 'Alerter delegue'}
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent>
