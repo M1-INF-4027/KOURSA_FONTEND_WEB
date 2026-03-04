@@ -58,6 +58,7 @@ export default function UEsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importSemestre, setImportSemestre] = useState('');
+  const [importNiveaux, setImportNiveaux] = useState([]);
 
   const load = async () => {
     try {
@@ -264,16 +265,22 @@ export default function UEsPage() {
         const code = row.code.trim();
         const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
         const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
+        const niveauIds = importNiveaux.map((n) => (typeof n === 'object' ? n.id : n));
         const data = {
           code_ue: code,
           libelle_ue: row.libelle.trim(),
           semestre_obj: semestreId,
           semestre: sem ? sem.numero : undefined,
+          ...(niveauIds.length > 0 ? { niveaux: niveauIds } : {}),
         };
 
         const codeLower = code.toLowerCase();
         const existing = exactMap[`${codeLower}|${semestreId || ''}`] || codeMap[codeLower];
         if (existing) {
+          if (niveauIds.length > 0) {
+            const existingNiveaux = (existing.niveaux || []).map((n) => (typeof n === 'object' ? n.id : n));
+            data.niveaux = [...new Set([...existingNiveaux, ...niveauIds])];
+          }
           await unitesEnseignementService.update(existing.id, data);
           updated++;
         } else {
@@ -294,6 +301,7 @@ export default function UEsPage() {
     setImportDialogOpen(false);
     setImportRows([]);
     setImportSemestre('');
+    setImportNiveaux([]);
 
     const parts = [];
     if (created > 0) parts.push(`${created} creee(s)`);
@@ -508,6 +516,17 @@ export default function UEsPage() {
                 </MenuItem>
               ))}
             </TextField>
+            <Autocomplete
+              multiple
+              size="small"
+              options={niveaux}
+              getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
+              value={importNiveaux}
+              onChange={(_, val) => setImportNiveaux(val)}
+              isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
+              renderInput={(params) => <TextField {...params} label="Classe (optionnel)" />}
+              sx={{ mt: 1.5 }}
+            />
           </Box>
           {importRows.length === 0 ? (
             <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Aucune ligne</Typography>
