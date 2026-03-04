@@ -242,9 +242,16 @@ export default function ChefUEsPage() {
     let failed = 0;
     let lastError = '';
 
-    // Build lookup: code_ue → existing UE
-    const existingMap = {};
-    items.forEach((ue) => { existingMap[ue.code_ue.trim().toLowerCase()] = ue; });
+    // Build lookups for matching existing UEs
+    // 1) Exact match: (code_ue, semestre_obj)  — same unique_together key
+    // 2) Fallback: code_ue only — catches orphans with wrong/null semestre_obj
+    const exactMap = {};
+    const codeMap = {};
+    items.forEach((ue) => {
+      const codeLower = ue.code_ue.trim().toLowerCase();
+      exactMap[`${codeLower}|${ue.semestre_obj || ''}`] = ue;
+      if (!codeMap[codeLower]) codeMap[codeLower] = ue; // first match
+    });
 
     for (const row of validRows) {
       try {
@@ -258,7 +265,8 @@ export default function ChefUEsPage() {
           semestre: sem ? sem.numero : undefined,
         };
 
-        const existing = existingMap[code.toLowerCase()];
+        const codeLower = code.toLowerCase();
+        const existing = exactMap[`${codeLower}|${semestreId || ''}`] || codeMap[codeLower];
         if (existing) {
           await unitesEnseignementService.update(existing.id, data);
           updated++;
