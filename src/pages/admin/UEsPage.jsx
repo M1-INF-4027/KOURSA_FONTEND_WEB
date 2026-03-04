@@ -57,6 +57,7 @@ export default function UEsPage() {
   const [importRows, setImportRows] = useState([]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importSemestre, setImportSemestre] = useState('');
 
   const load = async () => {
     try {
@@ -247,10 +248,11 @@ export default function UEsPage() {
 
     for (const row of validRows) {
       try {
+        const semestreFromRow = resolveSemestre(row.semestre);
         await unitesEnseignementService.create({
           code_ue: row.code.trim(),
           libelle_ue: row.libelle.trim(),
-          semestre_obj: resolveSemestre(row.semestre),
+          semestre_obj: semestreFromRow || (importSemestre ? Number(importSemestre) : null),
         });
         created++;
       } catch {
@@ -261,6 +263,7 @@ export default function UEsPage() {
     setImporting(false);
     setImportDialogOpen(false);
     setImportRows([]);
+    setImportSemestre('');
 
     if (created > 0 && failed === 0) {
       toast.success(`${created} UE(s) creee(s)`);
@@ -453,6 +456,23 @@ export default function UEsPage() {
           Apercu de l&apos;import ({importRows.length} ligne{importRows.length > 1 ? 's' : ''})
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+            <TextField
+              select
+              size="small"
+              label="Semestre par defaut (applique si absent du fichier)"
+              fullWidth
+              value={importSemestre}
+              onChange={(e) => setImportSemestre(e.target.value)}
+            >
+              <MenuItem value="">-- Aucun --</MenuItem>
+              {semestres.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  Semestre {s.numero}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
           {importRows.length === 0 ? (
             <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Aucune ligne</Typography>
           ) : (

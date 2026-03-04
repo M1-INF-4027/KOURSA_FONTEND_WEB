@@ -5,7 +5,7 @@ import {
   IconButton, Tooltip, MenuItem, Table, TableHead, TableBody,
   TableRow, TableCell, Typography, CircularProgress,
 } from '@mui/material';
-import { Edit, Add, Delete, FileUpload, Close } from '@mui/icons-material';
+import { Edit, Add, Delete, FileUpload, Close, People as PeopleIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
@@ -43,6 +43,7 @@ export default function ChefUEsPage() {
   const [importRows, setImportRows] = useState([]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importSemestre, setImportSemestre] = useState('');
 
   const load = async () => {
     try {
@@ -241,10 +242,11 @@ export default function ChefUEsPage() {
 
     for (const row of validRows) {
       try {
+        const semestreFromRow = resolveSemestre(row.semestre);
         await unitesEnseignementService.create({
           code_ue: row.code.trim(),
           libelle_ue: row.libelle.trim(),
-          semestre_obj: resolveSemestre(row.semestre),
+          semestre_obj: semestreFromRow || (importSemestre ? Number(importSemestre) : null),
         });
         created++;
       } catch {
@@ -255,6 +257,7 @@ export default function ChefUEsPage() {
     setImporting(false);
     setImportDialogOpen(false);
     setImportRows([]);
+    setImportSemestre('');
 
     if (created > 0 && failed === 0) {
       toast.success(`${created} UE(s) creee(s)`);
@@ -366,9 +369,14 @@ export default function ChefUEsPage() {
             searchFields={['code_ue', 'libelle_ue']}
             actions={(row) => (
               <>
+                <Tooltip title="Modifier">
+                  <IconButton size="small" onClick={() => handleOpen(row)}>
+                    <Edit fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Assigner des enseignants">
                   <IconButton size="small" onClick={() => handleOpenAssign(row)}>
-                    <Edit fontSize="small" />
+                    <PeopleIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Supprimer">
@@ -474,6 +482,23 @@ export default function ChefUEsPage() {
           Apercu de l&apos;import ({importRows.length} ligne{importRows.length > 1 ? 's' : ''})
         </DialogTitle>
         <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+            <TextField
+              select
+              size="small"
+              label="Semestre par defaut (applique si absent du fichier)"
+              fullWidth
+              value={importSemestre}
+              onChange={(e) => setImportSemestre(e.target.value)}
+            >
+              <MenuItem value="">-- Aucun --</MenuItem>
+              {semestres.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  Semestre {s.numero}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
           {importRows.length === 0 ? (
             <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Aucune ligne</Typography>
           ) : (
