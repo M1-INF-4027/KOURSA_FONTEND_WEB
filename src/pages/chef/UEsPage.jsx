@@ -238,20 +238,34 @@ export default function ChefUEsPage() {
 
     setImporting(true);
     let created = 0;
+    let updated = 0;
     let failed = 0;
     let lastError = '';
 
+    // Build lookup: code_ue → existing UE
+    const existingMap = {};
+    items.forEach((ue) => { existingMap[ue.code_ue.trim().toLowerCase()] = ue; });
+
     for (const row of validRows) {
       try {
+        const code = row.code.trim();
         const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
         const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
-        await unitesEnseignementService.create({
-          code_ue: row.code.trim(),
+        const data = {
+          code_ue: code,
           libelle_ue: row.libelle.trim(),
           semestre_obj: semestreId,
           semestre: sem ? sem.numero : undefined,
-        });
-        created++;
+        };
+
+        const existing = existingMap[code.toLowerCase()];
+        if (existing) {
+          await unitesEnseignementService.update(existing.id, data);
+          updated++;
+        } else {
+          await unitesEnseignementService.create(data);
+          created++;
+        }
       } catch (err) {
         failed++;
         const detail = err.response?.data;
@@ -267,10 +281,15 @@ export default function ChefUEsPage() {
     setImportRows([]);
     setImportSemestre('');
 
-    if (created > 0 && failed === 0) {
-      toast.success(`${created} UE(s) creee(s)`);
-    } else if (created > 0 && failed > 0) {
-      toast.success(`${created} creee(s), ${failed} echouee(s)`);
+    const parts = [];
+    if (created > 0) parts.push(`${created} creee(s)`);
+    if (updated > 0) parts.push(`${updated} mise(s) a jour`);
+    if (failed > 0) parts.push(`${failed} echouee(s)`);
+
+    if (failed === 0) {
+      toast.success(parts.join(', '));
+    } else if (created > 0 || updated > 0) {
+      toast.success(parts.join(', '));
       if (lastError) toast.error(lastError);
     } else {
       toast.error(lastError || `Import echoue (${failed} erreur(s))`);
