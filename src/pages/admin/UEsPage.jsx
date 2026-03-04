@@ -245,18 +245,26 @@ export default function UEsPage() {
     setImporting(true);
     let created = 0;
     let failed = 0;
+    let lastError = '';
 
     for (const row of validRows) {
       try {
-        const semestreFromRow = resolveSemestre(row.semestre);
+        const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
+        const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
         await unitesEnseignementService.create({
           code_ue: row.code.trim(),
           libelle_ue: row.libelle.trim(),
-          semestre_obj: semestreFromRow || (importSemestre ? Number(importSemestre) : null),
+          semestre_obj: semestreId,
+          semestre: sem ? sem.numero : undefined,
         });
         created++;
-      } catch {
+      } catch (err) {
         failed++;
+        const detail = err.response?.data;
+        if (detail && typeof detail === 'object' && !lastError) {
+          lastError = detail.detail || detail.non_field_errors?.[0]
+            || Object.entries(detail).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`).join(' | ');
+        }
       }
     }
 
@@ -269,8 +277,9 @@ export default function UEsPage() {
       toast.success(`${created} UE(s) creee(s)`);
     } else if (created > 0 && failed > 0) {
       toast.success(`${created} creee(s), ${failed} echouee(s)`);
+      if (lastError) toast.error(lastError);
     } else {
-      toast.error(`Import echoue (${failed} erreur(s))`);
+      toast.error(lastError || `Import echoue (${failed} erreur(s))`);
     }
 
     load();
