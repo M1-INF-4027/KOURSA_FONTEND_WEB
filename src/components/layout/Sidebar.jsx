@@ -33,6 +33,8 @@ import {
   ExpandLess,
   ExpandMore,
   Logout as LogoutIcon,
+  Email as EmailIcon,
+  AssignmentTurnedIn as TrackingIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import logo from '../../assets/logo.png';
@@ -76,6 +78,14 @@ const menuItems = {
         { label: 'Salles', path: '/admin/salles', icon: <SalleIcon /> },
       ],
     },
+    {
+      label: 'Gestion par Departement',
+      icon: <DeptIcon />,
+      children: [
+        { label: 'Emails autorises', path: '/admin/whitelist', icon: <EmailIcon /> },
+        { label: 'Suivi hebdo', path: '/admin/suivi-hebdo', icon: <TrackingIcon /> },
+      ],
+    },
     { label: 'UEs', path: '/admin/ues', icon: <UEIcon /> },
     { label: 'Annees academiques', path: '/admin/annees', icon: <CalendarIcon /> },
     { label: 'Nouvelle annee', path: '/admin/nouvelle-annee', icon: <NewYearIcon /> },
@@ -98,7 +108,7 @@ function SidebarContent({ onClose }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isAdmin, isChef, isEnseignant, isDelegue, roles } = useRoles();
-  const [openSub, setOpenSub] = useState(true);
+  const [openSub, setOpenSub] = useState({});
 
   let items;
   if (isAdmin) {
@@ -174,14 +184,14 @@ function SidebarContent({ onClose }) {
           item.children ? (
             <Box key={item.label}>
               <ListItemButton
-                onClick={() => setOpenSub(!openSub)}
+                onClick={() => setOpenSub((prev) => ({ ...prev, [item.label]: !(prev[item.label] ?? true) }))}
                 sx={{ borderRadius: 2, mb: 0.5 }}
               >
                 <ListItemIcon sx={{ minWidth: 40, color: '#7E7E7E' }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 500 }} />
-                {openSub ? <ExpandLess /> : <ExpandMore />}
+                {(openSub[item.label] ?? true) ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={openSub}>
+              <Collapse in={openSub[item.label] ?? true}>
                 <List disablePadding>
                   {item.children.map((child) => (
                     <ListItemButton

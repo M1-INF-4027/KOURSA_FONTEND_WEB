@@ -11,8 +11,8 @@ function unwrap(response) {
 }
 
 // Helper: fetch all pages
-async function fetchAll(url) {
-  const res = await api.get(url, { params: { page_size: 10000 } });
+async function fetchAll(url, params) {
+  const res = await api.get(url, { params: { page_size: 10000, ...params } });
   return unwrap(res);
 }
 
@@ -66,7 +66,12 @@ export const dashboardService = {
     return api.get(`/dashboard/export-heures/?${params.toString()}`, { responseType: 'blob' });
   },
   getAdminOverview: () => api.get('/dashboard/admin-overview/'),
-  getWeeklyTracking: (semaine) => api.get(`/dashboard/weekly-tracking/${semaine ? `?semaine=${semaine}` : ''}`),
+  getWeeklyTracking: (semaine, departement) => {
+    const params = new URLSearchParams();
+    if (semaine) params.append('semaine', semaine);
+    if (departement) params.append('departement', departement);
+    return api.get(`/dashboard/weekly-tracking/?${params.toString()}`);
+  },
   getEnseignantWeeklyTracking: (semaine) => api.get(`/dashboard/enseignant-weekly-tracking/${semaine ? `?semaine=${semaine}` : ''}`),
 };
 
@@ -90,7 +95,7 @@ export const rolesService = {
 
 // ==================== WHITELIST ====================
 export const whitelistService = {
-  getAll: () => fetchAll('/users/whitelist/'),
+  getAll: (params) => fetchAll('/users/whitelist/', params),
   create: (data) => api.post('/users/whitelist/', data),
   bulkCreate: (data) => api.post('/users/whitelist/bulk/', data),
   delete: (id) => api.delete(`/users/whitelist/${id}/`),

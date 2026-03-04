@@ -34,6 +34,8 @@ const WeeklyTrackingPage = lazy(() => import('./pages/chef/WeeklyTrackingPage'))
 const WhitelistPage = lazy(() => import('./pages/chef/WhitelistPage'));
 
 // Admin
+const AdminWhitelistPage = lazy(() => import('./pages/admin/WhitelistPage'));
+const AdminWeeklyTrackingPage = lazy(() => import('./pages/admin/WeeklyTrackingPage'));
 const FacultesPage = lazy(() => import('./pages/admin/FacultesPage'));
 const DepartementsPage = lazy(() => import('./pages/admin/DepartementsPage'));
 const FilieresPage = lazy(() => import('./pages/admin/FilieresPage'));
@@ -116,6 +118,8 @@ export default function App() {
                 <Route path="/admin/export" element={<AdminExportPage />} />
                 <Route path="/admin/annees" element={<AnneesPage />} />
                 <Route path="/admin/nouvelle-annee" element={<NewYearWizardPage />} />
+                <Route path="/admin/whitelist" element={<AdminWhitelistPage />} />
+                <Route path="/admin/suivi-hebdo" element={<AdminWeeklyTrackingPage />} />
               </Route>
 
               {/* 404 */}

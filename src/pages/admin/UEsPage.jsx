@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -15,12 +15,21 @@ import {
   Skeleton,
   Chip,
   Autocomplete,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Typography,
+  CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, FileUpload, Close } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { unitesEnseignementService, usersService, niveauxService, semestresService } from '../../api/services';
+import DepartmentSelector from '../../components/common/DepartmentSelector';
+import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService, filieresService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
@@ -38,13 +47,26 @@ export default function UEsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
+  // Department filter
+  const [selectedDept, setSelectedDept] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [filieres, setFilieres] = useState([]);
+
+  // Import CSV/Excel state
+  const fileInputRef = useRef(null);
+  const [importRows, setImportRows] = useState([]);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+
   const load = async () => {
     try {
-      const [ueRes, usrRes, nivRes, semRes] = await Promise.all([
+      const [ueRes, usrRes, nivRes, semRes, deptRes, filRes] = await Promise.all([
         unitesEnseignementService.getAll(),
         usersService.getAll(),
         niveauxService.getAll(),
         semestresService.getAll(anneeActive ? { annee_academique: anneeActive.id } : {}),
+        departementsService.getAll(),
+        filieresService.getAll(),
       ]);
       setItems(ueRes.data);
       setEnseignants(usrRes.data.filter((u) =>
@@ -53,6 +75,8 @@ export default function UEsPage() {
       setNiveaux(nivRes.data);
       const semData = Array.isArray(semRes.data?.results) ? semRes.data.results : (Array.isArray(semRes.data) ? semRes.data : []);
       setSemestres(semData);
+      setDepartments(deptRes.data);
+      setFilieres(filRes.data);
     } catch (err) {
       if (err.response?.status === 401) {
         toast.error('Session expiree, veuillez vous reconnecter');
@@ -65,6 +89,18 @@ export default function UEsPage() {
   };
 
   useEffect(() => { load(); }, [refreshKey]);
+
+  // Filter UEs by department (client-side via niveaux_details filiere_nom)
+  const filteredItems = useMemo(() => {
+    if (!selectedDept) return items;
+    const deptFiliereNames = filieres
+      .filter((f) => f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
+      .map((f) => f.nom_filiere);
+    return items.filter((ue) => {
+      const nivs = ue.niveaux_details || [];
+      return nivs.some((nd) => deptFiliereNames.includes(nd.filiere_nom));
+    });
+  }, [items, selectedDept, filieres]);
 
   const handleClose = () => {
     setDialogOpen(false);
@@ -138,6 +174,107 @@ export default function UEsPage() {
     }
   };
 
+  // --- Import CSV/Excel logic ---
+  const normalizeHeader = (h) => {
+    const key = String(h).trim().toLowerCase().replace(/[\s_-]+/g, '_');
+    if (['code', 'code_ue'].includes(key)) return 'code';
+    if (['libelle', 'libelle_ue', 'libellé', 'libellé_ue'].includes(key)) return 'libelle';
+    if (['semestre', 'semestre_obj', 'sem'].includes(key)) return 'semestre';
+    return key;
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target.result, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (!raw.length) {
+          toast.error('Le fichier est vide');
+          return;
+        }
+
+        const headerMap = {};
+        Object.keys(raw[0]).forEach((h) => { headerMap[h] = normalizeHeader(h); });
+
+        const rows = raw.map((row, idx) => {
+          const mapped = {};
+          Object.entries(row).forEach(([k, v]) => { mapped[headerMap[k]] = String(v).trim(); });
+          return { _idx: idx, code: mapped.code || '', libelle: mapped.libelle || '', semestre: mapped.semestre || '' };
+        });
+
+        setImportRows(rows);
+        setImportDialogOpen(true);
+      } catch {
+        toast.error('Impossible de lire le fichier');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const removeImportRow = (idx) => {
+    setImportRows((prev) => prev.filter((r) => r._idx !== idx));
+  };
+
+  const isRowValid = (row) => row.code.trim() !== '' && row.libelle.trim() !== '';
+
+  const resolveSemestre = (value) => {
+    if (!value) return null;
+    const num = parseInt(value, 10);
+    if (!isNaN(num)) {
+      const found = semestres.find((s) => s.numero === num);
+      if (found) return found.id;
+    }
+    // Try matching by string
+    const lower = value.toLowerCase();
+    const found = semestres.find((s) => String(s.numero) === lower || (s.libelle && s.libelle.toLowerCase().includes(lower)));
+    return found ? found.id : null;
+  };
+
+  const handleImport = async () => {
+    const validRows = importRows.filter(isRowValid);
+    if (!validRows.length) return;
+
+    setImporting(true);
+    let created = 0;
+    let failed = 0;
+
+    for (const row of validRows) {
+      try {
+        await unitesEnseignementService.create({
+          code_ue: row.code.trim(),
+          libelle_ue: row.libelle.trim(),
+          semestre_obj: resolveSemestre(row.semestre),
+        });
+        created++;
+      } catch {
+        failed++;
+      }
+    }
+
+    setImporting(false);
+    setImportDialogOpen(false);
+    setImportRows([]);
+
+    if (created > 0 && failed === 0) {
+      toast.success(`${created} UE(s) creee(s)`);
+    } else if (created > 0 && failed > 0) {
+      toast.success(`${created} creee(s), ${failed} echouee(s)`);
+    } else {
+      toast.error(`Import echoue (${failed} erreur(s))`);
+    }
+
+    load();
+  };
+
+  const validCount = importRows.filter(isRowValid).length;
+
   const columns = [
     { field: 'code_ue', label: 'Code' },
     { field: 'libelle_ue', label: 'Libelle' },
@@ -199,17 +336,31 @@ export default function UEsPage() {
         title="Unites d'enseignement"
         description="Gestion des UEs"
         action={
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
-            Ajouter
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" startIcon={<FileUpload />} onClick={() => fileInputRef.current?.click()}>
+              Importer
+            </Button>
+            <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
+              Ajouter
+            </Button>
+          </Box>
         }
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,.xlsx,.xls"
+        hidden
+        onChange={handleFileSelect}
+      />
+
+      <DepartmentSelector value={selectedDept} onChange={setSelectedDept} departments={departments} />
 
       <Card>
         <CardContent sx={{ p: 0 }}>
           <DataTable
             columns={columns}
-            rows={items}
+            rows={filteredItems}
             searchFields={['code_ue', 'libelle_ue']}
             actions={(row) => (
               <>
@@ -295,6 +446,67 @@ export default function UEsPage() {
         confirmText="Supprimer"
         confirmColor="error"
       />
+
+      {/* Import preview dialog */}
+      <Dialog open={importDialogOpen} onClose={() => !importing && setImportDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Apercu de l&apos;import ({importRows.length} ligne{importRows.length > 1 ? 's' : ''})
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          {importRows.length === 0 ? (
+            <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Aucune ligne</Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Code</TableCell>
+                  <TableCell>Libelle</TableCell>
+                  <TableCell>Semestre</TableCell>
+                  <TableCell align="center" sx={{ width: 80 }}>Statut</TableCell>
+                  <TableCell align="center" sx={{ width: 50 }} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {importRows.map((row) => {
+                  const valid = isRowValid(row);
+                  return (
+                    <TableRow key={row._idx} sx={!valid ? { bgcolor: 'error.50' } : undefined}>
+                      <TableCell>{row.code || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
+                      <TableCell>{row.libelle || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
+                      <TableCell>{row.semestre || '-'}</TableCell>
+                      <TableCell align="center">
+                        {valid ? (
+                          <Chip label="OK" size="small" color="success" variant="outlined" />
+                        ) : (
+                          <Chip label="Invalide" size="small" color="error" />
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton size="small" onClick={() => removeImportRow(row._idx)} disabled={importing}>
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setImportDialogOpen(false)} color="inherit" disabled={importing}>
+            Annuler
+          </Button>
+          <Button
+            onClick={handleImport}
+            variant="contained"
+            disabled={importing || validCount === 0}
+            startIcon={importing ? <CircularProgress size={18} color="inherit" /> : <FileUpload />}
+          >
+            {importing ? 'Import en cours...' : `Importer ${validCount} UE(s)`}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
