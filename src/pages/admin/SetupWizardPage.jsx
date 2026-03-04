@@ -16,6 +16,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import StepAnnee from './setup/StepAnnee';
 import StepStructure from './setup/StepStructure';
 import StepProgrammes from './setup/StepProgrammes';
+import StepSalles from './setup/StepSalles';
 import StepUEs from './setup/StepUEs';
 import StepChefs from './setup/StepChefs';
 
@@ -23,6 +24,7 @@ const steps = [
   'Annee academique',
   'Structure academique',
   'Programmes',
+  'Salles',
   "Unites d'enseignement",
   'Chefs de departement',
 ];
@@ -46,6 +48,8 @@ export default function SetupWizardPage() {
           setAnneeId(annee.id);
 
           if (checklist.ues_creees) {
+            setActiveStep(5);
+          } else if (checklist.salles_creees) {
             setActiveStep(4);
           } else if (checklist.filieres_creees && checklist.niveaux_crees) {
             setActiveStep(3);
@@ -110,8 +114,10 @@ export default function SetupWizardPage() {
       case 2:
         return <StepProgrammes onNext={handleNext} onBack={handleBack} />;
       case 3:
-        return <StepUEs onNext={handleNext} onBack={handleBack} anneeId={anneeId} />;
+        return <StepSalles onNext={handleNext} onBack={handleBack} />;
       case 4:
+        return <StepUEs onNext={handleNext} onBack={handleBack} anneeId={anneeId} />;
+      case 5:
         return <StepChefs onComplete={handleComplete} onBack={handleBack} />;
       default:
         return null;

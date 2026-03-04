@@ -119,6 +119,14 @@ export const niveauxService = {
   delete: (id) => api.delete(`/academic/niveaux/${id}/`),
 };
 
+export const sallesService = {
+  getAll: () => fetchAll('/academic/salles/'),
+  getById: (id) => api.get(`/academic/salles/${id}/`),
+  create: (data) => api.post('/academic/salles/', data),
+  update: (id, data) => api.patch(`/academic/salles/${id}/`, data),
+  delete: (id) => api.delete(`/academic/salles/${id}/`),
+};
+
 // ==================== TEACHING ====================
 export const unitesEnseignementService = {
   getAll: () => fetchAll('/teaching/unites-enseignement/'),
@@ -171,4 +179,6 @@ export const fichesSuiviService = {
     api.post(`/teaching/fiches-suivi/${id}/refuser/`, { motif_refus: motif }),
   resoumettre: (id) =>
     api.post(`/teaching/fiches-suivi/${id}/resoumettre/`),
+  checkConflicts: (data) =>
+    api.post('/teaching/fiches-suivi/check-conflicts/', data),
 };

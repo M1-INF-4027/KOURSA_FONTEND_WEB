@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
@@ -14,8 +14,10 @@ import {
   IconButton,
   Skeleton,
   CircularProgress,
+  Alert,
+  AlertTitle,
 } from '@mui/material';
-import { ArrowBack, Save as SaveIcon } from '@mui/icons-material';
+import { ArrowBack, Save as SaveIcon, MeetingRoom, Person } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -23,7 +25,7 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import PageHeader from '../../components/common/PageHeader';
-import { fichesSuiviService, unitesEnseignementService } from '../../api/services';
+import { fichesSuiviService, unitesEnseignementService, sallesService } from '../../api/services';
 import toast from 'react-hot-toast';
 
 dayjs.locale('fr');
@@ -34,6 +36,7 @@ export default function CreateFichePage() {
   const isEdit = Boolean(id);
 
   const [ues, setUes] = useState([]);
+  const [salles, setSalles] = useState([]);
   const [loadingUes, setLoadingUes] = useState(true);
   const [loadingFiche, setLoadingFiche] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
@@ -44,8 +47,11 @@ export default function CreateFichePage() {
   const [dateCours, setDateCours] = useState(null);
   const [heureDebut, setHeureDebut] = useState(null);
   const [heureFin, setHeureFin] = useState(null);
-  const [salle, setSalle] = useState('');
+  const [selectedSalle, setSelectedSalle] = useState(null);
   const [typeSeance, setTypeSeance] = useState('CM');
+
+  const [conflicts, setConflicts] = useState([]);
+  const conflictTimer = useRef(null);
   const [titreChapitre, setTitreChapitre] = useState('');
   const [contenuAborde, setContenuAborde] = useState('');
 
@@ -54,12 +60,16 @@ export default function CreateFichePage() {
   // Get enseignants from selected UE
   const enseignants = selectedUe?.enseignants_details || selectedUe?.enseignants || [];
 
-  // Load UEs
+  // Load UEs + salles
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await unitesEnseignementService.getAll();
-        setUes(res.data);
+        const [ueRes, sallesRes] = await Promise.all([
+          unitesEnseignementService.getAll(),
+          sallesService.getAll(),
+        ]);
+        setUes(ueRes.data);
+        setSalles(sallesRes.data.filter((s) => s.est_active));
       } catch {
         toast.error('Erreur chargement des UEs');
       } finally {
@@ -80,7 +90,14 @@ export default function CreateFichePage() {
         setDateCours(fiche.date_cours ? dayjs(fiche.date_cours) : null);
         setHeureDebut(fiche.heure_debut ? dayjs(`2000-01-01T${fiche.heure_debut}`) : null);
         setHeureFin(fiche.heure_fin ? dayjs(`2000-01-01T${fiche.heure_fin}`) : null);
-        setSalle(fiche.salle || '');
+        // Set salle from fiche data — match by id from loaded salles
+        if (fiche.salle) {
+          setSalles((currentSalles) => {
+            const matched = currentSalles.find((s) => s.id === fiche.salle);
+            if (matched) setSelectedSalle(matched);
+            return currentSalles;
+          });
+        }
         setTypeSeance(fiche.type_seance || 'CM');
         setTitreChapitre(fiche.titre_chapitre || '');
         setContenuAborde(fiche.contenu_aborde || '');
@@ -112,6 +129,37 @@ export default function CreateFichePage() {
     };
     load();
   }, [id, isEdit]);
+
+  // Conflict detection with debounce
+  useEffect(() => {
+    if (conflictTimer.current) clearTimeout(conflictTimer.current);
+
+    const canCheck = (selectedSalle || selectedEnseignant) && dateCours && heureDebut && heureFin
+      && heureFin.isAfter(heureDebut);
+
+    if (!canCheck) {
+      setConflicts([]);
+      return;
+    }
+
+    conflictTimer.current = setTimeout(async () => {
+      try {
+        const res = await fichesSuiviService.checkConflicts({
+          salle: selectedSalle?.id || null,
+          enseignant: selectedEnseignant?.id || null,
+          date_cours: dateCours.format('YYYY-MM-DD'),
+          heure_debut: heureDebut.format('HH:mm'),
+          heure_fin: heureFin.format('HH:mm'),
+          exclude_fiche_id: isEdit ? Number(id) : undefined,
+        });
+        setConflicts(res.data.conflicts || []);
+      } catch {
+        // Silently ignore conflict check errors
+      }
+    }, 500);
+
+    return () => { if (conflictTimer.current) clearTimeout(conflictTimer.current); };
+  }, [selectedSalle, selectedEnseignant, dateCours, heureDebut, heureFin]);
 
   const validate = () => {
     const newErrors = {};
@@ -153,7 +201,7 @@ export default function CreateFichePage() {
         date_cours: dateCours.format('YYYY-MM-DD'),
         heure_debut: heureDebut.format('HH:mm'),
         heure_fin: heureFin.format('HH:mm'),
-        salle: salle.trim() || null,
+        salle: selectedSalle?.id || null,
         type_seance: typeSeance,
         titre_chapitre: titreChapitre.trim(),
         contenu_aborde: contenuAborde.trim(),
@@ -318,12 +366,23 @@ export default function CreateFichePage() {
 
               {/* Salle */}
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  fullWidth
-                  label="Salle"
-                  value={salle}
-                  onChange={(e) => setSalle(e.target.value)}
-                  placeholder="Ex: Amphi A, Salle 201..."
+                <Autocomplete
+                  options={salles}
+                  value={selectedSalle}
+                  onChange={(_, value) => setSelectedSalle(value)}
+                  getOptionLabel={(option) => {
+                    const parts = [option.nom_salle];
+                    if (option.batiment) parts.push(`(${option.batiment})`);
+                    return parts.join(' ');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Salle"
+                      placeholder="Selectionner une salle..."
+                    />
+                  )}
                 />
               </Grid>
 
@@ -382,6 +441,24 @@ export default function CreateFichePage() {
                   placeholder="Decrivez le contenu aborde pendant le cours..."
                 />
               </Grid>
+
+              {/* Conflicts */}
+              {conflicts.length > 0 && (
+                <Grid size={{ xs: 12 }}>
+                  <Alert severity="warning" sx={{ '& .MuiAlert-message': { width: '100%' } }}>
+                    <AlertTitle>Conflits detectes</AlertTitle>
+                    {conflicts.map((c, i) => (
+                      <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        {c.type === 'salle' ? <MeetingRoom fontSize="small" /> : <Person fontSize="small" />}
+                        <Typography variant="body2">{c.message}</Typography>
+                      </Box>
+                    ))}
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      Ces conflits sont informatifs. Vous pouvez quand meme soumettre la fiche.
+                    </Typography>
+                  </Alert>
+                </Grid>
+              )}
 
               {/* Submit */}
               <Grid size={{ xs: 12 }}>

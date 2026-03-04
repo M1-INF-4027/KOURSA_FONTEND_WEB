@@ -36,6 +36,7 @@ const FacultesPage = lazy(() => import('./pages/admin/FacultesPage'));
 const DepartementsPage = lazy(() => import('./pages/admin/DepartementsPage'));
 const FilieresPage = lazy(() => import('./pages/admin/FilieresPage'));
 const NiveauxPage = lazy(() => import('./pages/admin/NiveauxPage'));
+const SallesPage = lazy(() => import('./pages/admin/SallesPage'));
 const UEsPage = lazy(() => import('./pages/admin/UEsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const AdminFichesPage = lazy(() => import('./pages/admin/FichesPage'));
@@ -104,6 +105,7 @@ export default function App() {
                 <Route path="/admin/departements" element={<DepartementsPage />} />
                 <Route path="/admin/filieres" element={<FilieresPage />} />
                 <Route path="/admin/niveaux" element={<NiveauxPage />} />
+                <Route path="/admin/salles" element={<SallesPage />} />
                 <Route path="/admin/ues" element={<UEsPage />} />
                 <Route path="/admin/utilisateurs" element={<AdminUsersPage />} />
                 <Route path="/admin/fiches" element={<AdminFichesPage />} />
