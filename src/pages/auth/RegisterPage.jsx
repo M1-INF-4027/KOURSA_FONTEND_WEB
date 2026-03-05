@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { usersService, rolesService } from '../../api/services';
 import {
   Box,
@@ -25,6 +26,7 @@ import logo from '../../assets/logo.png';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -75,13 +77,21 @@ export default function RegisterPage() {
         return;
       }
 
-      await usersService.register({
+      const registerRes = await usersService.register({
         first_name: first_name.trim(),
         last_name: last_name.trim(),
         email: email.trim(),
         password,
         roles_ids: [roleEnseignant.id],
       });
+
+      // Si le compte est auto-active (email dans la whitelist), connecter directement
+      if (registerRes.data?.statut === 'ACTIF') {
+        await login(email.trim(), password);
+        toast.success('Compte active ! Bienvenue sur Koursa.');
+        navigate('/dashboard', { replace: true });
+        return;
+      }
 
       setSuccess(true);
       toast.success('Demande envoyee avec succes !');

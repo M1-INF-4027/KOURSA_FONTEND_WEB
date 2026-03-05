@@ -19,7 +19,7 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import { Delete, Add, PlaylistAdd } from '@mui/icons-material';
+import { Delete, PlaylistAdd } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -32,10 +32,6 @@ export default function AdminWhitelistPage() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('ALL');
-
-  // Single add
-  const [email, setEmail] = useState('');
-  const [roleType, setRoleType] = useState('ENSEIGNANT');
 
   // Bulk add
   const [bulkEmails, setBulkEmails] = useState('');
@@ -70,19 +66,6 @@ export default function AdminWhitelistPage() {
     ? entries
     : entries.filter((e) => e.role_type === tab);
 
-  const handleAdd = async () => {
-    if (!email.trim()) return;
-    try {
-      await whitelistService.create({ email: email.trim().toLowerCase(), role_type: roleType, departement: Number(selectedDept) });
-      toast.success('Email ajoute');
-      setEmail('');
-      load();
-    } catch (err) {
-      const detail = err.response?.data?.email?.[0] || err.response?.data?.detail || 'Erreur ajout';
-      toast.error(detail);
-    }
-  };
-
   const handleBulkAdd = async () => {
     const emails = bulkEmails
       .split('\n')
@@ -93,7 +76,7 @@ export default function AdminWhitelistPage() {
       const res = await whitelistService.bulkCreate({ emails, role_type: bulkRoleType, departement: Number(selectedDept) });
       const { created, skipped } = res.data;
       if (created.length) toast.success(`${created.length} email(s) ajoute(s)`);
-      if (skipped.length) toast(`${skipped.length} email(s) deja present(s)`, { icon: '\u26A0\uFE0F' });
+      if (skipped.length) toast(`Deja present(s) : ${skipped.join(', ')}`, { icon: '\u26A0\uFE0F', duration: 5000 });
       setBulkEmails('');
       load();
     } catch (err) {
@@ -137,47 +120,12 @@ export default function AdminWhitelistPage() {
         </Box>
       ) : (
         <>
-          {/* Ajout individuel */}
-          <Card sx={{ mb: 2 }}>
-            <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-              <TextField
-                size="small"
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                sx={{ flex: 1, minWidth: 220 }}
-              />
-              <TextField
-                size="small"
-                select
-                label="Type"
-                value={roleType}
-                onChange={(e) => setRoleType(e.target.value)}
-                SelectProps={{ native: true }}
-                sx={{ minWidth: 140 }}
-              >
-                <option value="ENSEIGNANT">Enseignant</option>
-                <option value="DELEGUE">Delegue</option>
-              </TextField>
-              <Button
-                variant="contained"
-                startIcon={<Add />}
-                onClick={handleAdd}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                Ajouter
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Ajout en masse */}
+          {/* Ajout d'emails */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <TextField
                 size="small"
-                label="Ajout en masse (un email par ligne)"
+                label="Emails a autoriser (un email par ligne)"
                 multiline
                 minRows={3}
                 maxRows={8}
