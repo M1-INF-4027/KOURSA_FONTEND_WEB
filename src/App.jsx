@@ -18,6 +18,7 @@ const NotFoundPage = lazy(() => import('./pages/shared/NotFoundPage'));
 const FichesListPage = lazy(() => import('./pages/enseignant/FichesListPage'));
 const FicheDetailPage = lazy(() => import('./pages/enseignant/FicheDetailPage'));
 const MesDeleguesPage = lazy(() => import('./pages/enseignant/MesDeleguesPage'));
+const EnseignantExportPage = lazy(() => import('./pages/enseignant/ExportPage'));
 
 // Delegue
 const DeleGueFichesListPage = lazy(() => import('./pages/delegue/FichesListPage'));
@@ -85,6 +86,7 @@ export default function App() {
               <Route path="/fiches" element={<FichesListPage />} />
               <Route path="/fiches/:id" element={<FicheDetailPage />} />
               <Route path="/enseignant/delegues" element={<MesDeleguesPage />} />
+              <Route path="/enseignant/export" element={<EnseignantExportPage />} />
 
               {/* Delegue */}
               <Route element={<RoleGuard allowedRoles={['Délégué']} />}>

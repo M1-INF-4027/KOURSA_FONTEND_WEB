@@ -104,6 +104,15 @@ export default function UEsPage() {
     });
   }, [items, selectedDept, filieres]);
 
+  // Filter niveaux by selected department for dialogs
+  const filteredNiveaux = useMemo(() => {
+    if (!selectedDept) return niveaux;
+    const deptFiliereIds = filieres
+      .filter((f) => f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
+      .map((f) => f.id);
+    return niveaux.filter((n) => deptFiliereIds.includes(n.filiere || n.filiere_id));
+  }, [niveaux, selectedDept, filieres]);
+
   const handleClose = () => {
     setDialogOpen(false);
     setEditing(null);
@@ -468,12 +477,12 @@ export default function UEsPage() {
           />
           <Autocomplete
             multiple
-            options={niveaux}
+            options={filteredNiveaux}
             getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
             value={form.niveaux.map((n) => typeof n === 'object' ? n : niveaux.find((x) => x.id === n) || n)}
             onChange={(_, val) => setForm({ ...form, niveaux: val })}
             isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-            renderInput={(params) => <TextField {...params} label="Niveaux" />}
+            renderInput={(params) => <TextField {...params} label={`Niveaux${selectedDept ? ' (filtre par departement)' : ''}`} />}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -519,12 +528,12 @@ export default function UEsPage() {
             <Autocomplete
               multiple
               size="small"
-              options={niveaux}
+              options={filteredNiveaux}
               getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
               value={importNiveaux}
               onChange={(_, val) => setImportNiveaux(val)}
               isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-              renderInput={(params) => <TextField {...params} label="Classe (optionnel)" />}
+              renderInput={(params) => <TextField {...params} label={`Classe (optionnel)${selectedDept ? ' - filtre par departement' : ''}`} />}
               sx={{ mt: 1.5 }}
             />
           </Box>

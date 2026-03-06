@@ -52,6 +52,7 @@ const menuItems = {
     { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
     { label: 'Mes Fiches', path: '/fiches', icon: <FichesIcon /> },
     { label: 'Mes Delegues', path: '/enseignant/delegues', icon: <DeleguesIcon /> },
+    { label: 'Mon Rapport', path: '/enseignant/export', icon: <ExportIcon /> },
     { label: 'Profil', path: '/profile', icon: <PersonIcon /> },
   ],
   chef: [
@@ -115,11 +116,12 @@ function SidebarContent({ onClose }) {
     items = menuItems.admin;
   } else if (isChef) {
     items = [...menuItems.chef];
-    // Chef + Enseignant : ajouter "Mes Fiches" et "Mes Delegues" après le Dashboard
+    // Chef + Enseignant : ajouter "Mes Fiches", "Mes Delegues" et "Mon Rapport" après le Dashboard
     if (isEnseignant) {
       items.splice(1, 0,
         { label: 'Mes Fiches', path: '/fiches', icon: <FichesIcon /> },
         { label: 'Mes Delegues', path: '/enseignant/delegues', icon: <DeleguesIcon /> },
+        { label: 'Mon Rapport', path: '/enseignant/export', icon: <ExportIcon /> },
       );
     }
   } else if (isDelegue) {

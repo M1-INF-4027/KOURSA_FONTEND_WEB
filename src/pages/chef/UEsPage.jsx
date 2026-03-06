@@ -10,12 +10,14 @@ import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { unitesEnseignementService, usersService, niveauxService, semestresService } from '../../api/services';
+import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function ChefUEsPage() {
   const { anneeActive, refreshKey } = useConfig();
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [enseignants, setEnseignants] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
@@ -48,10 +50,18 @@ export default function ChefUEsPage() {
 
   const load = async () => {
     try {
+      // Determiner le departement du chef pour filtrer les niveaux
+      const deptRes = await departementsService.getAll();
+      const depts = Array.isArray(deptRes.data) ? deptRes.data : deptRes.data?.results || [];
+      const monDept = depts.find((d) => d.chef_departement === user?.id);
+      const deptId = monDept?.id;
+
       const [ueRes, usrRes, nivRes, semRes] = await Promise.all([
         unitesEnseignementService.getAll(),
         usersService.getAll(),
-        niveauxService.getAll(),
+        deptId
+          ? niveauxService.getByDepartement(deptId)
+          : niveauxService.getAll(),
         semestresService.getAll(anneeActive ? { annee_academique: anneeActive.id } : {}),
       ]);
       const ues = Array.isArray(ueRes.data) ? ueRes.data : ueRes.data?.results || [];

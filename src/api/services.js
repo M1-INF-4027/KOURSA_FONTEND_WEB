@@ -73,6 +73,10 @@ export const dashboardService = {
     return api.get(`/dashboard/weekly-tracking/?${params.toString()}`);
   },
   getEnseignantWeeklyTracking: (semaine) => api.get(`/dashboard/enseignant-weekly-tracking/${semaine ? `?semaine=${semaine}` : ''}`),
+  exportMonRapport: (filters) => {
+    const params = buildDashboardParams(filters);
+    return api.get(`/dashboard/export-mon-rapport/?${params.toString()}`, { responseType: 'blob' });
+  },
 };
 
 // ==================== USERS ====================
@@ -128,6 +132,7 @@ export const filieresService = {
 
 export const niveauxService = {
   getAll: () => fetchAll('/academic/niveaux/'),
+  getByDepartement: (deptId) => fetchAll(`/academic/niveaux/?departement=${deptId}`),
   getById: (id) => api.get(`/academic/niveaux/${id}/`),
   create: (data) => api.post('/academic/niveaux/', data),
   update: (id, data) => api.patch(`/academic/niveaux/${id}/`, data),
