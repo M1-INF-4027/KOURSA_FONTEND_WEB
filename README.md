@@ -6,12 +6,21 @@ Application web React pour la plateforme **Koursa** - Systeme de gestion academi
 
 - Authentification JWT avec gestion automatique du refresh token
 - Dashboard adaptatif selon le role de l'utilisateur
-- Gestion des fiches de suivi pedagogique (creation, validation, refus, resoumission)
+- Gestion des fiches de suivi pedagogique (creation, validation directe, refus, resoumission)
+- Previsualisation de la fiche avant soumission (delegue)
+- Creation de fiches par le chef de departement sans restriction de date
+- Restriction de date a 3 jours dans le passe pour les delegues
 - Filtrage par classe (Filiere / Niveau / Semestre) sur l'ensemble du systeme
+- Vue hierarchique des UEs par filiere/niveau (espace chef)
 - Structure academique complete (Facultes, Departements, Filieres, Niveaux, UEs)
+- Code UE automatiquement en majuscule
+- Filtre par filiere dans le formulaire de creation UE
 - Gestion des utilisateurs avec systeme d'approbation
+- Changement de niveau/filiere par les delegues (nouvelle annee)
 - Export Excel des bilans (global, par UE, par enseignant)
 - Inscription enseignant avec page d'attente de validation
+- Dialog de confirmation avant deconnexion
+- Affichage du nom du departement pour le chef de departement
 - Interface responsive avec Material UI et Tailwind CSS
 - Notifications toast pour les retours utilisateur
 - Graphiques statistiques avec Recharts
@@ -89,10 +98,14 @@ KOURSA_FONTEND_WEB/
 │   │   │   ├── CreateFichePage.jsx
 │   │   │   └── FicheDetailPage.jsx
 │   │   ├── chef/
-│   │   │   ├── DeleguesPage.jsx  # Demandes en attente (delegues + enseignants)
-│   │   │   ├── UsersPage.jsx     # Gestion utilisateurs du departement
-│   │   │   ├── FichesPage.jsx
-│   │   │   └── ExportPage.jsx
+│   │   │   ├── DeleguesPage.jsx    # Demandes en attente (delegues + enseignants)
+│   │   │   ├── UsersPage.jsx       # Gestion utilisateurs du departement
+│   │   │   ├── UEsPage.jsx         # UEs avec vue hierarchique filiere/niveau
+│   │   │   ├── FichesPage.jsx      # Fiches du departement
+│   │   │   ├── CreateFichePage.jsx # Creation fiche par le chef (sans restriction date)
+│   │   │   ├── ExportPage.jsx
+│   │   │   ├── WeeklyTrackingPage.jsx # Suivi hebdomadaire
+│   │   │   └── WhitelistPage.jsx   # Emails autorises
 │   │   └── admin/
 │   │       ├── UsersPage.jsx     # Gestion globale utilisateurs (CRUD + approbation)
 │   │       ├── FacultesPage.jsx
@@ -135,7 +148,7 @@ La configuration se trouve dans `src/api/config.js`.
 | Role | Dashboard | Pages accessibles |
 |------|-----------|-------------------|
 | **Super Administrateur** | Stats globales (utilisateurs, UEs, fiches) | Structure academique, UEs, Utilisateurs, Fiches |
-| **Chef de Departement** | Stats departement avec filtres filiere/niveau/semestre | Demandes, Utilisateurs, Fiches, Export |
+| **Chef de Departement** | Stats departement avec filtres filiere/niveau/semestre | Demandes, Utilisateurs, UEs (vue hierarchique), Fiches (+ creation), Export |
 | **Chef + Enseignant** | Dashboard Chef + acces "Mes Fiches" | Tout le menu Chef + Mes Fiches enseignant |
 | **Enseignant** | Fiches en attente + validees | Mes Fiches (avec classe/niveau affiche) |
 | **Delegue** | Stats fiches + action rapide | Mes Fiches (creation avec classe visible, soumission) |
