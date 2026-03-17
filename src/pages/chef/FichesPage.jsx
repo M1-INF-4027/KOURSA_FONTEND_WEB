@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -16,6 +17,7 @@ import {
   Typography,
   Divider,
 } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -24,6 +26,7 @@ import { useConfig } from '../../contexts/ConfigContext';
 import toast from 'react-hot-toast';
 
 export default function ChefFichesPage() {
+  const navigate = useNavigate();
   const { refreshKey } = useConfig();
   const [fiches, setFiches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +87,15 @@ export default function ChefFichesPage() {
 
   return (
     <Box className="fade-in">
-      <PageHeader title="Fiches du departement" description="Vue d'ensemble des fiches de suivi" />
+      <PageHeader
+        title="Fiches du departement"
+        description="Vue d'ensemble des fiches de suivi"
+        action={
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/chef/fiches/new')}>
+            Creer une fiche
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent sx={{ p: 0 }}>

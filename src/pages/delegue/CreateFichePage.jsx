@@ -170,11 +170,11 @@ export default function CreateFichePage() {
       newErrors.dateCours = 'Veuillez selectionner une date';
     } else {
       const maxDate = dayjs().add(7, 'day');
-      const minDate = dayjs().subtract(30, 'day');
+      const minDate = dayjs().subtract(3, 'day');
       if (dateCours.isAfter(maxDate, 'day')) {
         newErrors.dateCours = 'La date ne peut pas depasser 7 jours dans le futur';
       } else if (dateCours.isBefore(minDate, 'day')) {
-        newErrors.dateCours = 'La date ne peut pas etre plus de 30 jours dans le passe';
+        newErrors.dateCours = 'Cette date depasse le delai autorise (3 jours). Contactez votre chef de departement pour creer cette fiche.';
       }
     }
     if (!heureDebut) newErrors.heureDebut = 'Veuillez selectionner l\'heure de debut';
@@ -318,7 +318,7 @@ export default function CreateFichePage() {
                   label="Date du cours"
                   value={dateCours}
                   onChange={(value) => setDateCours(value)}
-                  minDate={dayjs().subtract(30, 'day')}
+                  minDate={dayjs().subtract(3, 'day')}
                   maxDate={dayjs().add(7, 'day')}
                   slotProps={{
                     textField: {
