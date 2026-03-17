@@ -14,10 +14,15 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
 } from '@mui/material';
-import { Save as SaveIcon, Lock as LockIcon } from '@mui/icons-material';
+import { Save as SaveIcon, Lock as LockIcon, SwapHoriz as SwapIcon } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
-import { usersService } from '../../api/services';
+import { usersService, filieresService, niveauxService } from '../../api/services';
 import toast from 'react-hot-toast';
 
 const roleLabels = {
@@ -39,6 +44,45 @@ export default function ProfilePage() {
   const [confirmPwd, setConfirmPwd] = useState('');
   const [pwdError, setPwdError] = useState('');
   const [changingPwd, setChangingPwd] = useState(false);
+
+  // Delegate level change
+  const isDelegue = roles.some((r) => r === 'Délégué' || r === 'Delegue');
+  const [levelDialogOpen, setLevelDialogOpen] = useState(false);
+  const [allFilieres, setAllFilieres] = useState([]);
+  const [allNiveaux, setAllNiveaux] = useState([]);
+  const [selectedFiliere, setSelectedFiliere] = useState('');
+  const [selectedNiveau, setSelectedNiveau] = useState('');
+  const [savingLevel, setSavingLevel] = useState(false);
+
+  const openLevelDialog = async () => {
+    try {
+      const [filRes, nivRes] = await Promise.all([filieresService.getAll(), niveauxService.getAll()]);
+      setAllFilieres(filRes.data);
+      setAllNiveaux(nivRes.data);
+    } catch { /* silent */ }
+    setLevelDialogOpen(true);
+  };
+
+  const filteredDialogNiveaux = selectedFiliere
+    ? allNiveaux.filter((n) => (n.filiere || n.filiere_id) === Number(selectedFiliere))
+    : allNiveaux;
+
+  const handleChangeLevel = async () => {
+    if (!selectedNiveau) return;
+    setSavingLevel(true);
+    try {
+      await usersService.changerNiveau(selectedNiveau);
+      toast.success('Niveau mis a jour');
+      setLevelDialogOpen(false);
+      const res = await usersService.getMe();
+      updateUser(res.data);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      toast.error(detail || 'Erreur changement de niveau');
+    } finally {
+      setSavingLevel(false);
+    }
+  };
 
   const initials = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`.toUpperCase();
 
@@ -210,6 +254,78 @@ export default function ProfilePage() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Level Change Dialog (Delegate only) */}
+      {isDelegue && (
+        <>
+          <Card sx={{ mt: 3 }}>
+            <CardContent sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <SwapIcon sx={{ color: '#001EA6' }} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Changement de classe</Typography>
+                <Typography variant="body2" sx={{ color: '#7E7E7E' }}>
+                  Nouvelle annee ? Mettez a jour votre filiere et niveau.
+                </Typography>
+              </Box>
+              <Button variant="outlined" onClick={openLevelDialog}>
+                Changer
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Dialog
+            open={levelDialogOpen}
+            onClose={() => setLevelDialogOpen(false)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 3 } }}
+          >
+            <DialogTitle sx={{ fontWeight: 700 }}>
+              <SwapIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#001EA6' }} />
+              Changer de classe
+            </DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <Typography variant="body2" sx={{ color: '#525252' }}>
+                Selectionnez votre nouvelle filiere et votre nouveau niveau.
+              </Typography>
+              <TextField
+                select
+                label="Filiere"
+                fullWidth
+                value={selectedFiliere}
+                onChange={(e) => { setSelectedFiliere(e.target.value); setSelectedNiveau(''); }}
+              >
+                {allFilieres.map((f) => (
+                  <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+                ))}
+              </TextField>
+              {selectedFiliere && (
+                <TextField
+                  select
+                  label="Niveau"
+                  fullWidth
+                  value={selectedNiveau}
+                  onChange={(e) => setSelectedNiveau(e.target.value)}
+                >
+                  {filteredDialogNiveaux.map((n) => (
+                    <MenuItem key={n.id} value={n.id}>{n.nom_niveau}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+              <Button onClick={() => setLevelDialogOpen(false)} color="inherit">Annuler</Button>
+              <Button
+                onClick={handleChangeLevel}
+                variant="contained"
+                disabled={savingLevel || !selectedNiveau}
+              >
+                {savingLevel ? <CircularProgress size={20} /> : 'Confirmer'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </Box>
   );
 }

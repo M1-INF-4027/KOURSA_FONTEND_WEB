@@ -90,6 +90,7 @@ export const usersService = {
   approuverDelegue: (id) => api.post(`/users/utilisateurs/${id}/approuver-delegue/`),
   approuver: (id) => api.post(`/users/utilisateurs/${id}/approuver/`),
   register: (data) => api.post('/users/utilisateurs/', data),
+  changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
 };
 
 export const rolesService = {
@@ -199,8 +200,8 @@ export const fichesSuiviService = {
   update: (id, data) => api.patch(`/teaching/fiches-suivi/${id}/`, data),
   delete: (id) => api.delete(`/teaching/fiches-suivi/${id}/`),
   getEnAttente: () => fetchAll('/teaching/fiches-suivi/en-attente/'),
-  valider: (id, validationToken) =>
-    api.post(`/teaching/fiches-suivi/${id}/valider/`, { validation_token: validationToken }),
+  valider: (id) =>
+    api.post(`/teaching/fiches-suivi/${id}/valider/`),
   refuser: (id, motif) =>
     api.post(`/teaching/fiches-suivi/${id}/refuser/`, { motif_refus: motif }),
   resoumettre: (id) =>

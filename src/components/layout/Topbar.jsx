@@ -13,6 +13,11 @@ import {
   Box,
   useMediaQuery,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -28,6 +33,7 @@ export default function Topbar({ onMenuToggle }) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
   const [anchorEl, setAnchorEl] = useState(null);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const initials = user
     ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
@@ -35,6 +41,11 @@ export default function Topbar({ onMenuToggle }) {
 
   const handleLogout = () => {
     setAnchorEl(null);
+    setLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutDialogOpen(false);
     logout();
     navigate('/login');
   };
@@ -91,6 +102,39 @@ export default function Topbar({ onMenuToggle }) {
           </Menu>
         </Box>
       </Toolbar>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: 3, p: 1, maxWidth: 400 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 700 }}>
+          <LogoutIcon sx={{ color: '#EF4444' }} />
+          Se deconnecter
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: '#525252' }}>
+            Etes-vous sur de vouloir vous deconnecter de votre compte ?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setLogoutDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none', color: '#525252', borderColor: '#DFDFDF' }}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={confirmLogout}
+            variant="contained"
+            sx={{ borderRadius: 2, textTransform: 'none', bgcolor: '#EF4444', '&:hover': { bgcolor: '#DC2626' } }}
+          >
+            Se deconnecter
+          </Button>
+        </DialogActions>
+      </Dialog>
     </AppBar>
   );
 }

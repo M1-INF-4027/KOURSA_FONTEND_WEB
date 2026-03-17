@@ -37,6 +37,13 @@ import {
   AssignmentTurnedIn as TrackingIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+} from '@mui/material';
 import logo from '../../assets/logo.png';
 
 const SIDEBAR_WIDTH = 260;
@@ -110,6 +117,7 @@ function SidebarContent({ onClose }) {
   const { user, logout } = useAuth();
   const { isAdmin, isChef, isEnseignant, isDelegue, roles } = useRoles();
   const [openSub, setOpenSub] = useState({});
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   let items;
   if (isAdmin) {
@@ -135,6 +143,11 @@ function SidebarContent({ onClose }) {
   };
 
   const handleLogout = () => {
+    setLogoutDialogOpen(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutDialogOpen(false);
     logout();
     navigate('/login');
   };
@@ -250,6 +263,39 @@ function SidebarContent({ onClose }) {
           <ListItemText primary="Deconnexion" primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: 500 }} />
         </ListItemButton>
       </Box>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        PaperProps={{ sx: { borderRadius: 3, p: 1, maxWidth: 400 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 700 }}>
+          <LogoutIcon sx={{ color: '#EF4444' }} />
+          Se deconnecter
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: '#525252' }}>
+            Etes-vous sur de vouloir vous deconnecter de votre compte ?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setLogoutDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2, textTransform: 'none', color: '#525252', borderColor: '#DFDFDF' }}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={confirmLogout}
+            variant="contained"
+            sx={{ borderRadius: 2, textTransform: 'none', bgcolor: '#EF4444', '&:hover': { bgcolor: '#DC2626' } }}
+          >
+            Se deconnecter
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

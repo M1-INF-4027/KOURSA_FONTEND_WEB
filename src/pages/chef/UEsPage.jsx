@@ -136,7 +136,7 @@ export default function ChefUEsPage() {
     setSaving(true);
     try {
       const data = {
-        code_ue: form.code_ue,
+        code_ue: form.code_ue.toUpperCase(),
         libelle_ue: form.libelle_ue,
         semestre_obj: form.semestre_obj || null,
         niveaux: form.niveaux.map((n) => (typeof n === 'object' ? n.id : n)),
@@ -482,7 +482,8 @@ export default function ChefUEsPage() {
             label="Code UE"
             fullWidth
             value={form.code_ue}
-            onChange={(e) => setForm({ ...form, code_ue: e.target.value })}
+            onChange={(e) => setForm({ ...form, code_ue: e.target.value.toUpperCase() })}
+            inputProps={{ style: { textTransform: 'uppercase' } }}
           />
           <TextField
             label="Libelle"

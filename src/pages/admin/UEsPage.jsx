@@ -51,6 +51,7 @@ export default function UEsPage() {
   const [selectedDept, setSelectedDept] = useState('');
   const [departments, setDepartments] = useState([]);
   const [filieres, setFilieres] = useState([]);
+  const [formFiliere, setFormFiliere] = useState('');
 
   // Import CSV/Excel state
   const fileInputRef = useRef(null);
@@ -141,7 +142,7 @@ export default function UEsPage() {
     setSaving(true);
     try {
       const data = {
-        code_ue: form.code_ue,
+        code_ue: form.code_ue.toUpperCase(),
         libelle_ue: form.libelle_ue,
         semestre_obj: form.semestre_obj || null,
         enseignants: form.enseignants.map((e) => (typeof e === 'object' ? e.id : e)),
@@ -445,7 +446,8 @@ export default function UEsPage() {
             label="Code UE"
             fullWidth
             value={form.code_ue}
-            onChange={(e) => setForm({ ...form, code_ue: e.target.value })}
+            onChange={(e) => setForm({ ...form, code_ue: e.target.value.toUpperCase() })}
+            inputProps={{ style: { textTransform: 'uppercase' } }}
           />
           <TextField
             label="Libelle"
@@ -475,14 +477,33 @@ export default function UEsPage() {
             isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
             renderInput={(params) => <TextField {...params} label="Enseignants" />}
           />
+          <TextField
+            select
+            label="Filtrer par filiere"
+            fullWidth
+            value={formFiliere}
+            onChange={(e) => setFormFiliere(e.target.value)}
+          >
+            <MenuItem value="">Toutes les filieres</MenuItem>
+            {filieres
+              .filter((f) => !selectedDept || f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
+              .map((f) => (
+                <MenuItem key={f.id} value={f.id}>
+                  {f.nom_filiere}
+                </MenuItem>
+              ))}
+          </TextField>
           <Autocomplete
             multiple
-            options={filteredNiveaux}
+            options={formFiliere
+              ? filteredNiveaux.filter((n) => (n.filiere || n.filiere_id) === Number(formFiliere))
+              : filteredNiveaux
+            }
             getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
             value={form.niveaux.map((n) => typeof n === 'object' ? n : niveaux.find((x) => x.id === n) || n)}
             onChange={(_, val) => setForm({ ...form, niveaux: val })}
             isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-            renderInput={(params) => <TextField {...params} label={`Niveaux${selectedDept ? ' (filtre par departement)' : ''}`} />}
+            renderInput={(params) => <TextField {...params} label={`Niveaux${formFiliere ? ' (filtre par filiere)' : selectedDept ? ' (filtre par departement)' : ''}`} />}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

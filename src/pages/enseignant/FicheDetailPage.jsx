@@ -26,7 +26,6 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
-import PasswordDialog from '../../components/common/PasswordDialog';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { fichesSuiviService } from '../../api/services';
 import toast from 'react-hot-toast';
@@ -48,7 +47,6 @@ export default function FicheDetailPage() {
   const navigate = useNavigate();
   const [fiche, setFiche] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [pwdOpen, setPwdOpen] = useState(false);
   const [refuseOpen, setRefuseOpen] = useState(false);
   const [motifRefus, setMotifRefus] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -68,10 +66,10 @@ export default function FicheDetailPage() {
     load();
   }, [id]);
 
-  const handleValider = async (validationToken) => {
+  const handleValider = async () => {
     setActionLoading(true);
     try {
-      const res = await fichesSuiviService.valider(id, validationToken);
+      const res = await fichesSuiviService.valider(id);
       setFiche(res.data);
       toast.success('Fiche validee avec succes');
     } catch {
@@ -202,7 +200,7 @@ export default function FicheDetailPage() {
                     variant="contained"
                     fullWidth
                     startIcon={<CheckCircle />}
-                    onClick={() => setPwdOpen(true)}
+                    onClick={handleValider}
                     disabled={actionLoading}
                     sx={{ bgcolor: '#10B981', '&:hover': { bgcolor: '#059669' } }}
                   >
@@ -247,14 +245,6 @@ export default function FicheDetailPage() {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Password Dialog for Validation */}
-      <PasswordDialog
-        open={pwdOpen}
-        onClose={() => setPwdOpen(false)}
-        onConfirm={handleValider}
-        title="Confirmer la validation"
-      />
 
       {/* Refusal Dialog */}
       <ConfirmDialog
