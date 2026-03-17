@@ -170,6 +170,10 @@ function SidebarContent({ onClose }) {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
           {roles.map((role) => {
             const color = roleColors[role] || '#7E7E7E';
+            let label = role;
+            if ((role === 'Chef de Département' || role === 'Chef de Departement') && user?.nom_departement) {
+              label = `Chef de Dept. ${user.nom_departement}`;
+            }
             return (
               <Box
                 key={role}
@@ -184,7 +188,7 @@ function SidebarContent({ onClose }) {
                   fontWeight: 700,
                 }}
               >
-                {role}
+                {label}
               </Box>
             );
           })}

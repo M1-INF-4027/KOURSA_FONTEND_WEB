@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box, Card, CardContent, Dialog, DialogTitle, DialogContent,
   DialogActions, Button, Chip, Autocomplete, TextField, Skeleton,
   IconButton, Tooltip, MenuItem, Table, TableHead, TableBody,
   TableRow, TableCell, Typography, CircularProgress,
+  Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material';
-import { Edit, Add, Delete, FileUpload, Close, People as PeopleIcon } from '@mui/icons-material';
+import { Edit, Add, Delete, FileUpload, Close, People as PeopleIcon, ExpandMore, School as SchoolIcon, Layers as LayersIcon } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
@@ -327,6 +328,35 @@ export default function ChefUEsPage() {
 
   const validCount = importRows.filter(isRowValid).length;
 
+  // View mode: 'hierarchy' or 'flat'
+  const [viewMode, setViewMode] = useState('hierarchy');
+
+  // Group UEs by filiere > niveau
+  const groupedItems = useMemo(() => {
+    const filiereMap = {};
+    items.forEach((ue) => {
+      const nivs = ue.niveaux_details || [];
+      if (nivs.length === 0) {
+        const key = 'Non classee';
+        if (!filiereMap[key]) filiereMap[key] = { filiere: key, niveaux: { 'Sans niveau': [] } };
+        if (!filiereMap[key].niveaux['Sans niveau']) filiereMap[key].niveaux['Sans niveau'] = [];
+        filiereMap[key].niveaux['Sans niveau'].push(ue);
+      } else {
+        nivs.forEach((n) => {
+          const filiere = n.filiere_nom || 'Sans filiere';
+          const niveau = n.nom_niveau || 'Sans niveau';
+          if (!filiereMap[filiere]) filiereMap[filiere] = { filiere, niveaux: {} };
+          if (!filiereMap[filiere].niveaux[niveau]) filiereMap[filiere].niveaux[niveau] = [];
+          // Avoid duplicates if same UE appears for multiple niveaux in same filiere
+          if (!filiereMap[filiere].niveaux[niveau].find((u) => u.id === ue.id)) {
+            filiereMap[filiere].niveaux[niveau].push(ue);
+          }
+        });
+      }
+    });
+    return Object.values(filiereMap);
+  }, [items]);
+
   const columns = [
     { field: 'code_ue', label: 'Code' },
     { field: 'libelle_ue', label: 'Libelle' },
@@ -416,34 +446,126 @@ export default function ChefUEsPage() {
         onChange={handleFileSelect}
       />
 
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          <DataTable
-            columns={columns}
-            rows={items}
-            searchFields={['code_ue', 'libelle_ue']}
-            actions={(row) => (
-              <>
-                <Tooltip title="Modifier">
-                  <IconButton size="small" onClick={() => handleOpen(row)}>
-                    <Edit fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Assigner des enseignants">
-                  <IconButton size="small" onClick={() => handleOpenAssign(row)}>
-                    <PeopleIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Supprimer">
-                  <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => { setDeleteId(row.id); setDeleteOpen(true); }}>
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </>
-            )}
-          />
-        </CardContent>
-      </Card>
+      {/* View mode toggle */}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <Chip
+          label="Par filiere / niveau"
+          icon={<SchoolIcon sx={{ fontSize: 18 }} />}
+          onClick={() => setViewMode('hierarchy')}
+          color={viewMode === 'hierarchy' ? 'primary' : 'default'}
+          variant={viewMode === 'hierarchy' ? 'filled' : 'outlined'}
+        />
+        <Chip
+          label="Liste complete"
+          icon={<LayersIcon sx={{ fontSize: 18 }} />}
+          onClick={() => setViewMode('flat')}
+          color={viewMode === 'flat' ? 'primary' : 'default'}
+          variant={viewMode === 'flat' ? 'filled' : 'outlined'}
+        />
+      </Box>
+
+      {viewMode === 'hierarchy' ? (
+        /* Hierarchical view: Filiere > Niveau > UEs */
+        <Box>
+          {groupedItems.map((group) => (
+            <Accordion key={group.filiere} defaultExpanded sx={{ mb: 1, borderRadius: 2, '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMore />} sx={{ bgcolor: '#F8F9FA' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <SchoolIcon sx={{ color: '#001EA6' }} />
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{group.filiere}</Typography>
+                  <Chip
+                    label={`${Object.values(group.niveaux).flat().length} UE(s)`}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails sx={{ p: 0 }}>
+                {Object.entries(group.niveaux).map(([niveau, ues]) => (
+                  <Box key={niveau}>
+                    <Box sx={{ px: 3, py: 1.5, bgcolor: '#F0F4FF', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LayersIcon sx={{ fontSize: 18, color: '#525252' }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: '#525252' }}>{niveau}</Typography>
+                      <Chip label={`${ues.length}`} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                    </Box>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 600 }}>Code</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Libelle</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Semestre</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>Enseignants</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {ues.map((ue) => {
+                          const ensNames = ue.enseignants_details || [];
+                          const semInfo = ue.semestre_info;
+                          return (
+                            <TableRow key={ue.id} hover>
+                              <TableCell><Typography variant="body2" sx={{ fontWeight: 600 }}>{ue.code_ue}</Typography></TableCell>
+                              <TableCell>{ue.libelle_ue}</TableCell>
+                              <TableCell>{semInfo ? <Chip label={`S${semInfo.numero}`} size="small" variant="outlined" /> : '-'}</TableCell>
+                              <TableCell>
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                  {ensNames.length === 0 ? (
+                                    <Chip label="Aucun" size="small" sx={{ color: '#EF4444', bgcolor: '#FEE2E2', fontWeight: 600 }} />
+                                  ) : ensNames.map((e, i) => (
+                                    <Chip key={i} label={`${e.first_name} ${e.last_name}`} size="small" />
+                                  ))}
+                                </Box>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Tooltip title="Modifier"><IconButton size="small" onClick={() => handleOpen(ue)}><Edit fontSize="small" /></IconButton></Tooltip>
+                                <Tooltip title="Enseignants"><IconButton size="small" onClick={() => handleOpenAssign(ue)}><PeopleIcon fontSize="small" /></IconButton></Tooltip>
+                                <Tooltip title="Supprimer"><IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => { setDeleteId(ue.id); setDeleteOpen(true); }}><Delete fontSize="small" /></IconButton></Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                ))}
+              </AccordionDetails>
+            </Accordion>
+          ))}
+          {groupedItems.length === 0 && (
+            <Card><CardContent sx={{ textAlign: 'center', py: 4 }}><Typography color="text.secondary">Aucune UE</Typography></CardContent></Card>
+          )}
+        </Box>
+      ) : (
+        /* Flat view: DataTable */
+        <Card>
+          <CardContent sx={{ p: 0 }}>
+            <DataTable
+              columns={columns}
+              rows={items}
+              searchFields={['code_ue', 'libelle_ue']}
+              actions={(row) => (
+                <>
+                  <Tooltip title="Modifier">
+                    <IconButton size="small" onClick={() => handleOpen(row)}>
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Assigner des enseignants">
+                    <IconButton size="small" onClick={() => handleOpenAssign(row)}>
+                      <PeopleIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Supprimer">
+                    <IconButton size="small" sx={{ color: '#EF4444' }} onClick={() => { setDeleteId(row.id); setDeleteOpen(true); }}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </>
+              )}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Assign enseignants dialog */}
       <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)} maxWidth="sm" fullWidth>

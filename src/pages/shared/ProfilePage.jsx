@@ -154,10 +154,14 @@ export default function ProfilePage() {
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                 {roles.map((r) => {
                   const config = roleLabels[r] || { label: r, color: '#7E7E7E' };
+                  let label = config.label;
+                  if ((r === 'Chef de Département' || r === 'Chef de Departement') && user?.nom_departement) {
+                    label = `Chef Dept. ${user.nom_departement}`;
+                  }
                   return (
                     <Chip
                       key={r}
-                      label={config.label}
+                      label={label}
                       size="small"
                       sx={{ bgcolor: `${config.color}14`, color: config.color, fontWeight: 600 }}
                     />
