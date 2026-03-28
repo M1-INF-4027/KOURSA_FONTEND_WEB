@@ -21,6 +21,7 @@ import {
   Person,
   MenuBook,
   School,
+  PictureAsPdf,
 } from '@mui/icons-material';
 import StatusBadge from '../../components/common/StatusBadge';
 import { fichesSuiviService } from '../../api/services';
@@ -45,6 +46,7 @@ export default function FicheDetailPage() {
   const { user } = useAuth();
   const [fiche, setFiche] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -74,6 +76,30 @@ export default function FicheDetailPage() {
 
   const isAuthor = user?.id === (fiche.delegue?.id || fiche.delegue);
   const canResubmit = fiche.statut === 'REFUSEE' && isAuthor;
+
+  const isAdminOrChef = user?.roles?.some((r) => {
+    const name = r.nom_role || r;
+    return name === 'Super Administrateur' || name === 'Chef de Département';
+  }) || user?.is_superuser;
+
+  const canDownloadPdf = isAdminOrChef || fiche.statut === 'VALIDEE';
+
+  const handleDownloadPdf = async () => {
+    setPdfLoading(true);
+    try {
+      const res = await fichesSuiviService.exportPdf(id);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fiche_${fiche.code_ue || 'export'}_${fiche.date_cours || 'pdf'}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Erreur lors du telechargement');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
 
   return (
     <Box className="fade-in">
@@ -187,6 +213,21 @@ export default function FicheDetailPage() {
                     onClick={() => navigate(`/delegue/fiches/${id}/edit`)}
                   >
                     Modifier et resoumettre
+                  </Button>
+                </>
+              )}
+
+              {canDownloadPdf && (
+                <>
+                  <Divider sx={{ my: 2 }} />
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={pdfLoading ? null : <PictureAsPdf />}
+                    onClick={handleDownloadPdf}
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? 'Telechargement...' : 'Telecharger PDF'}
                   </Button>
                 </>
               )}

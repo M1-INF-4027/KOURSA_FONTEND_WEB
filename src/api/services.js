@@ -20,7 +20,6 @@ async function fetchAll(url, params) {
 export const authService = {
   login: (credentials) => api.post('/auth/token/', credentials),
   refreshToken: (refreshToken) => api.post('/auth/token/refresh/', { refresh: refreshToken }),
-  confirmPassword: (password) => api.post('/users/utilisateurs/confirm-password/', { password }),
 };
 
 // ==================== DASHBOARD ====================
@@ -91,6 +90,7 @@ export const usersService = {
   approuver: (id) => api.post(`/users/utilisateurs/${id}/approuver/`),
   register: (data) => api.post('/users/utilisateurs/', data),
   changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
+  resetDatabase: (password) => api.post('/users/utilisateurs/reset-database/', { password }),
 };
 
 export const rolesService = {
@@ -208,4 +208,6 @@ export const fichesSuiviService = {
     api.post(`/teaching/fiches-suivi/${id}/resoumettre/`),
   checkConflicts: (data) =>
     api.post('/teaching/fiches-suivi/check-conflicts/', data),
+  exportPdf: (id) =>
+    api.get(`/teaching/fiches-suivi/${id}/export-pdf/`, { responseType: 'blob' }),
 };

@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
-import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService } from '../../api/services';
+import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService, filieresService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -41,6 +41,10 @@ export default function ChefUEsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
 
+  // Filiere filter for UE form
+  const [filieres, setFilieres] = useState([]);
+  const [formFiliere, setFormFiliere] = useState('');
+
   // Import CSV/Excel state
   const fileInputRef = useRef(null);
   const [importRows, setImportRows] = useState([]);
@@ -57,13 +61,14 @@ export default function ChefUEsPage() {
       const monDept = depts.find((d) => d.chef_departement === user?.id);
       const deptId = monDept?.id;
 
-      const [ueRes, usrRes, nivRes, semRes] = await Promise.all([
+      const [ueRes, usrRes, nivRes, semRes, filRes] = await Promise.all([
         unitesEnseignementService.getAll(),
         usersService.getAll(),
         deptId
           ? niveauxService.getByDepartement(deptId)
           : niveauxService.getAll(),
         semestresService.getAll(anneeActive ? { annee_academique: anneeActive.id } : {}),
+        filieresService.getAll(),
       ]);
       const ues = Array.isArray(ueRes.data) ? ueRes.data : ueRes.data?.results || [];
       const users = Array.isArray(usrRes.data) ? usrRes.data : usrRes.data?.results || [];
@@ -74,6 +79,8 @@ export default function ChefUEsPage() {
       setNiveaux(nivRes.data);
       const semData = Array.isArray(semRes.data?.results) ? semRes.data.results : (Array.isArray(semRes.data) ? semRes.data : []);
       setSemestres(semData);
+      const filData = Array.isArray(filRes.data) ? filRes.data : filRes.data?.results || [];
+      setFilieres(deptId ? filData.filter((f) => f.departement === deptId || f.departement_id === deptId) : filData);
     } catch {
       toast.error('Erreur chargement des UEs');
     } finally {
@@ -114,6 +121,7 @@ export default function ChefUEsPage() {
     setDialogOpen(false);
     setEditing(null);
     setForm({ code_ue: '', libelle_ue: '', semestre_obj: '', niveaux: [] });
+    setFormFiliere('');
   };
 
   const handleOpen = (item = null) => {
@@ -626,14 +634,31 @@ export default function ChefUEsPage() {
               </MenuItem>
             ))}
           </TextField>
+          <TextField
+            select
+            label="Filtrer par filiere"
+            fullWidth
+            value={formFiliere}
+            onChange={(e) => setFormFiliere(e.target.value)}
+          >
+            <MenuItem value="">Toutes les filieres</MenuItem>
+            {filieres.map((f) => (
+              <MenuItem key={f.id} value={f.id}>
+                {f.nom_filiere}
+              </MenuItem>
+            ))}
+          </TextField>
           <Autocomplete
             multiple
-            options={niveaux}
+            options={formFiliere
+              ? niveaux.filter((n) => (n.filiere || n.filiere_id) === Number(formFiliere))
+              : niveaux
+            }
             getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
             value={form.niveaux.map((n) => typeof n === 'object' ? n : niveaux.find((x) => x.id === n) || n)}
             onChange={(_, val) => setForm({ ...form, niveaux: val })}
             isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-            renderInput={(params) => <TextField {...params} label="Niveaux" />}
+            renderInput={(params) => <TextField {...params} label={`Niveaux${formFiliere ? ' (filtre par filiere)' : ''}`} />}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

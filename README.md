@@ -7,6 +7,7 @@ Application web React pour la plateforme **Koursa** - Systeme de gestion academi
 - Authentification JWT avec gestion automatique du refresh token
 - Dashboard adaptatif selon le role de l'utilisateur
 - Gestion des fiches de suivi pedagogique (creation, validation directe, refus, resoumission)
+- Telechargement des fiches validees en PDF (format officiel universite)
 - Previsualisation de la fiche avant soumission (delegue)
 - Creation de fiches par le chef de departement sans restriction de date
 - Restriction de date a 3 jours dans le passe pour les delegues
@@ -18,6 +19,8 @@ Application web React pour la plateforme **Koursa** - Systeme de gestion academi
 - Gestion des utilisateurs avec systeme d'approbation
 - Changement de niveau/filiere par les delegues (nouvelle annee)
 - Export Excel des bilans (global, par UE, par enseignant)
+- Import Excel des UEs (admin et chef, avec filtre par filiere)
+- Import bulk d'emails pour la whitelist enseignants
 - Inscription enseignant avec page d'attente de validation
 - Dialog de confirmation avant deconnexion
 - Affichage du nom du departement pour le chef de departement
@@ -68,7 +71,6 @@ KOURSA_FONTEND_WEB/
 │   │   │   ├── StatusBadge.jsx
 │   │   │   ├── RoleBadge.jsx
 │   │   │   ├── ConfirmDialog.jsx
-│   │   │   ├── PasswordDialog.jsx
 │   │   │   └── EmptyState.jsx
 │   │   ├── guards/               # Protection des routes
 │   │   │   ├── AuthGuard.jsx     # Authentification + redirection EN_ATTENTE
@@ -112,8 +114,14 @@ KOURSA_FONTEND_WEB/
 │   │       ├── DepartementsPage.jsx
 │   │       ├── FilieresPage.jsx
 │   │       ├── NiveauxPage.jsx
-│   │       ├── UEsPage.jsx
-│   │       └── FichesPage.jsx
+│   │       ├── SallesPage.jsx
+│   │       ├── UEsPage.jsx       # CRUD + import Excel + filtre filiere
+│   │       ├── FichesPage.jsx
+│   │       ├── WhitelistPage.jsx  # Emails autorises + import bulk
+│   │       ├── ExportPage.jsx     # Export bilans Excel
+│   │       ├── AnneesPage.jsx     # Annees academiques
+│   │       ├── SetupWizardPage.jsx # Assistant configuration nouvelle annee
+│   │       └── WeeklyTrackingPage.jsx # Suivi hebdomadaire
 │   ├── App.jsx                   # Routes principales
 │   ├── main.jsx                  # Point d'entree
 │   └── index.css
@@ -162,6 +170,46 @@ Le systeme gere les fiches **par classe** (ex: INF L1, MATH M1). Chaque UE est l
 - **Toutes les listes de fiches** : colonne "Classe" visible (admin, chef, delegue, enseignant)
 - **Pages detail fiche** : affichent la classe et le semestre
 - **Creation de fiche (delegue)** : le selecteur UE affiche la classe (ex: "INF101 - Algo (Informatique M1)")
+
+---
+
+## Export PDF des fiches de suivi
+
+Un bouton "Telecharger PDF" est disponible sur la page detail de chaque fiche. Le PDF genere reproduit le format officiel de la fiche papier de l'universite (en-tete bilingue, grille d'informations, contenu, signatures).
+
+**Regles d'acces :**
+- **Delegue / Enseignant** : bouton visible uniquement pour les fiches avec statut `VALIDEE`
+- **Chef de Departement / Super Admin** : bouton toujours visible quel que soit le statut
+
+Le bouton est present sur :
+- `enseignant/FicheDetailPage.jsx` (utilise aussi par chef et admin via `/fiches/:id`)
+- `delegue/FicheDetailPage.jsx`
+
+---
+
+## Import de donnees
+
+### Import UEs (admin et chef)
+- Bouton "Importer" sur la page UEs
+- Format Excel attendu : colonnes `code`, `libelle`, `semestre`
+- Apercu avant import avec validation ligne par ligne
+- Selection du semestre et des niveaux par defaut
+
+### Import Whitelist (admin et chef)
+- Textarea pour coller les emails (un par ligne)
+- Selection du role (ENSEIGNANT ou DELEGUE)
+- Creation en masse via l'endpoint `/api/users/whitelist/bulk/`
+
+### Fichiers d'import pre-segmentes
+Des fichiers Excel prets a l'import sont disponibles dans `Ressources/Fichiers_Import/` :
+| Fichier | Section d'import | Contenu |
+|---|---|---|
+| `Import_Whitelist_Fonda.xlsx` | Whitelist | 25 emails enseignants fondamental |
+| `Import_Whitelist_Pro.xlsx` | Whitelist | 22 emails enseignants professionnel |
+| `Import_UEs_Fonda.xlsx` | UEs | 188 UEs filiere fondamentale |
+| `Import_UEs_Pro.xlsx` | UEs | 122 UEs filiere professionnelle |
+| `Import_Affectations_Fonda.xlsx` | Reference | Mapping UE → Enseignant (fondamental) |
+| `Import_Affectations_Pro.xlsx` | Reference | Mapping UE → Enseignant (professionnel) |
 
 ---
 
