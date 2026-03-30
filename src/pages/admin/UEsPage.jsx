@@ -190,9 +190,11 @@ export default function UEsPage() {
   // --- Import CSV/Excel logic ---
   const normalizeHeader = (h) => {
     const key = String(h).trim().toLowerCase().replace(/[\s_-]+/g, '_');
-    if (['code', 'code_ue'].includes(key)) return 'code';
-    if (['libelle', 'libelle_ue', 'libellé', 'libellé_ue'].includes(key)) return 'libelle';
+    if (['code', 'code_ue', 'codes_2025_2026', 'code_ue_intitulé'].includes(key)) return 'code';
+    if (['libelle', 'libelle_ue', 'libellé', 'libellé_ue', 'intitulé', 'intitule'].includes(key)) return 'libelle';
     if (['semestre', 'semestre_obj', 'sem'].includes(key)) return 'semestre';
+    if (['niveau'].includes(key)) return 'niveau';
+    if (['enseignant'].includes(key)) return 'enseignant';
     return key;
   };
 
@@ -219,7 +221,14 @@ export default function UEsPage() {
         const rows = raw.map((row, idx) => {
           const mapped = {};
           Object.entries(row).forEach(([k, v]) => { mapped[headerMap[k]] = String(v).trim(); });
-          return { _idx: idx, code: mapped.code || '', libelle: mapped.libelle || '', semestre: mapped.semestre || '' };
+          return {
+            _idx: idx,
+            code: mapped.code || '',
+            libelle: mapped.libelle || '',
+            semestre: mapped.semestre || '',
+            niveau: mapped.niveau || '',
+            enseignant: mapped.enseignant || '',
+          };
         });
 
         setImportRows(rows);
@@ -255,6 +264,27 @@ export default function UEsPage() {
     return niveaux.find(
       (n) => n.nom_niveau === niveauName && (n.filiere === Number(filiereId) || n.filiere_id === Number(filiereId))
     ) || null;
+  };
+
+  // Resolve niveau from explicit column value (e.g. "L1", "M2") + filiere
+  const resolveNiveauFromColumn = (niveauStr, filiereId) => {
+    if (!niveauStr || !filiereId) return null;
+    const cleaned = niveauStr.trim().toUpperCase();
+    return niveaux.find(
+      (n) => n.nom_niveau === cleaned && (n.filiere === Number(filiereId) || n.filiere_id === Number(filiereId))
+    ) || null;
+  };
+
+  // Match enseignant by partial name (case-insensitive)
+  const resolveEnseignant = (name) => {
+    if (!name) return null;
+    const lower = name.trim().toLowerCase();
+    if (!lower) return null;
+    return enseignants.find((e) => {
+      const fullName = `${e.first_name} ${e.last_name}`.toLowerCase();
+      const lastName = (e.last_name || '').toLowerCase();
+      return fullName.includes(lower) || lastName.includes(lower) || lower.includes(lastName);
+    }) || null;
   };
 
   const resolveSemestre = (value) => {
@@ -297,10 +327,19 @@ export default function UEsPage() {
         const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
         const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
 
-        // Niveaux: combine manual selection + auto-detection from code
+        // Niveaux: combine manual selection + auto from code + explicit column
         const manualNiveauIds = importNiveaux.map((n) => (typeof n === 'object' ? n.id : n));
         const autoNiveau = resolveNiveauForCode(code, importFiliere);
-        const allNiveauIds = [...new Set([...manualNiveauIds, ...(autoNiveau ? [autoNiveau.id] : [])])];
+        const columnNiveau = resolveNiveauFromColumn(row.niveau, importFiliere);
+        const allNiveauIds = [...new Set([
+          ...manualNiveauIds,
+          ...(autoNiveau ? [autoNiveau.id] : []),
+          ...(columnNiveau ? [columnNiveau.id] : []),
+        ])];
+
+        // Enseignant: match by name (optional)
+        const matchedEnseignant = resolveEnseignant(row.enseignant);
+        const enseignantIds = matchedEnseignant ? [matchedEnseignant.id] : [];
 
         const data = {
           code_ue: code,
@@ -315,9 +354,14 @@ export default function UEsPage() {
         if (existing) {
           const existingNiveaux = (existing.niveaux || []).map((n) => (typeof n === 'object' ? n.id : n));
           data.niveaux = [...new Set([...existingNiveaux, ...allNiveauIds])];
+          if (enseignantIds.length > 0) {
+            const existingEns = (existing.enseignants || []).map((e) => (typeof e === 'object' ? e.id : e));
+            data.enseignants = [...new Set([...existingEns, ...enseignantIds])];
+          }
           await unitesEnseignementService.update(existing.id, data);
           updated++;
         } else {
+          if (enseignantIds.length > 0) data.enseignants = enseignantIds;
           await unitesEnseignementService.create(data);
           created++;
         }
@@ -611,6 +655,8 @@ export default function UEsPage() {
                   <TableCell>Code</TableCell>
                   <TableCell>Libelle</TableCell>
                   <TableCell>Semestre</TableCell>
+                  {importRows.some((r) => r.niveau) && <TableCell>Niveau</TableCell>}
+                  {importRows.some((r) => r.enseignant) && <TableCell>Enseignant</TableCell>}
                   <TableCell align="center" sx={{ width: 80 }}>Statut</TableCell>
                   <TableCell align="center" sx={{ width: 50 }} />
                 </TableRow>
@@ -623,6 +669,16 @@ export default function UEsPage() {
                       <TableCell>{row.code || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
                       <TableCell>{row.libelle || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
                       <TableCell>{row.semestre || '-'}</TableCell>
+                      {importRows.some((r) => r.niveau) && <TableCell>{row.niveau || '-'}</TableCell>}
+                      {importRows.some((r) => r.enseignant) && (
+                        <TableCell>
+                          {row.enseignant ? (
+                            resolveEnseignant(row.enseignant)
+                              ? <Chip label={row.enseignant} size="small" color="success" variant="outlined" />
+                              : <Tooltip title="Non trouve dans les utilisateurs"><Chip label={row.enseignant} size="small" color="warning" variant="outlined" /></Tooltip>
+                          ) : '-'}
+                        </TableCell>
+                      )}
                       <TableCell align="center">
                         {valid ? (
                           <Chip label="OK" size="small" color="success" variant="outlined" />
