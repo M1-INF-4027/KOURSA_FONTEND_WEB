@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -19,7 +19,8 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import { Delete, PlaylistAdd } from '@mui/icons-material';
+import { Delete, PlaylistAdd, FileUpload } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -36,6 +37,9 @@ export default function AdminWhitelistPage() {
   // Bulk add
   const [bulkEmails, setBulkEmails] = useState('');
   const [bulkRoleType, setBulkRoleType] = useState('ENSEIGNANT');
+
+  // File import
+  const fileInputRef = useRef(null);
 
   // Delete confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -82,6 +86,47 @@ export default function AdminWhitelistPage() {
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erreur ajout en masse');
     }
+  };
+
+  const handleFileImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const wb = XLSX.read(evt.target.result, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        // Extract emails from first column (whatever the header name)
+        const emails = raw
+          .map((row) => {
+            const firstVal = Object.values(row)[0];
+            return String(firstVal).trim().toLowerCase();
+          })
+          .filter((e) => e && e.includes('@'));
+
+        if (!emails.length) {
+          toast.error('Aucun email valide trouve dans le fichier');
+          return;
+        }
+
+        const res = await whitelistService.bulkCreate({
+          emails,
+          role_type: bulkRoleType,
+          departement: Number(selectedDept),
+        });
+        const { created, skipped } = res.data;
+        if (created.length) toast.success(`${created.length} email(s) importe(s)`);
+        if (skipped.length) toast(`${skipped.length} deja present(s)`, { icon: '\u26A0\uFE0F', duration: 5000 });
+        load();
+      } catch {
+        toast.error("Erreur lors de l'import du fichier");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const handleDelete = async () => {
@@ -154,6 +199,21 @@ export default function AdminWhitelistPage() {
                   sx={{ textTransform: 'none', fontWeight: 600 }}
                 >
                   Ajouter la liste
+                </Button>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  hidden
+                  ref={fileInputRef}
+                  onChange={handleFileImport}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<FileUpload />}
+                  onClick={() => fileInputRef.current?.click()}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Importer fichier
                 </Button>
               </Box>
             </CardContent>

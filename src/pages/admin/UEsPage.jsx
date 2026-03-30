@@ -60,6 +60,7 @@ export default function UEsPage() {
   const [importing, setImporting] = useState(false);
   const [importSemestre, setImportSemestre] = useState('');
   const [importNiveaux, setImportNiveaux] = useState([]);
+  const [importFiliere, setImportFiliere] = useState('');
 
   const load = async () => {
     try {
@@ -236,6 +237,26 @@ export default function UEsPage() {
 
   const isRowValid = (row) => row.code.trim() !== '' && row.libelle.trim() !== '';
 
+  // Detecte le niveau a partir du code UE (ex: INF352 → 3 → L3, INF4235 → 4 → M1)
+  const detectNiveauFromCode = (code) => {
+    // Cherche le premier chiffre apres les lettres : INF3xx → 3, ICT4xx → 4
+    const match = code.match(/^[A-Za-z]+(\d)/);
+    if (!match) return null;
+    const digit = parseInt(match[1], 10);
+    // 1→L1, 2→L2, 3→L3, 4→M1, 5→M2
+    const niveauMap = { 1: 'L1', 2: 'L2', 3: 'L3', 4: 'M1', 5: 'M2' };
+    return niveauMap[digit] || null;
+  };
+
+  const resolveNiveauForCode = (code, filiereId) => {
+    if (!filiereId || !code) return null;
+    const niveauName = detectNiveauFromCode(code);
+    if (!niveauName) return null;
+    return niveaux.find(
+      (n) => n.nom_niveau === niveauName && (n.filiere === Number(filiereId) || n.filiere_id === Number(filiereId))
+    ) || null;
+  };
+
   const resolveSemestre = (value) => {
     if (!value) return null;
     const num = parseInt(value, 10);
@@ -275,22 +296,25 @@ export default function UEsPage() {
         const code = row.code.trim();
         const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
         const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
-        const niveauIds = importNiveaux.map((n) => (typeof n === 'object' ? n.id : n));
+
+        // Niveaux: combine manual selection + auto-detection from code
+        const manualNiveauIds = importNiveaux.map((n) => (typeof n === 'object' ? n.id : n));
+        const autoNiveau = resolveNiveauForCode(code, importFiliere);
+        const allNiveauIds = [...new Set([...manualNiveauIds, ...(autoNiveau ? [autoNiveau.id] : [])])];
+
         const data = {
           code_ue: code,
           libelle_ue: row.libelle.trim(),
           semestre_obj: semestreId,
           semestre: sem ? sem.numero : undefined,
-          ...(niveauIds.length > 0 ? { niveaux: niveauIds } : {}),
+          ...(allNiveauIds.length > 0 ? { niveaux: allNiveauIds } : {}),
         };
 
         const codeLower = code.toLowerCase();
         const existing = exactMap[`${codeLower}|${semestreId || ''}`] || codeMap[codeLower];
         if (existing) {
-          if (niveauIds.length > 0) {
-            const existingNiveaux = (existing.niveaux || []).map((n) => (typeof n === 'object' ? n.id : n));
-            data.niveaux = [...new Set([...existingNiveaux, ...niveauIds])];
-          }
+          const existingNiveaux = (existing.niveaux || []).map((n) => (typeof n === 'object' ? n.id : n));
+          data.niveaux = [...new Set([...existingNiveaux, ...allNiveauIds])];
           await unitesEnseignementService.update(existing.id, data);
           updated++;
         } else {
@@ -312,6 +336,7 @@ export default function UEsPage() {
     setImportRows([]);
     setImportSemestre('');
     setImportNiveaux([]);
+    setImportFiliere('');
 
     const parts = [];
     if (created > 0) parts.push(`${created} creee(s)`);
@@ -546,6 +571,25 @@ export default function UEsPage() {
                 </MenuItem>
               ))}
             </TextField>
+            <TextField
+              select
+              size="small"
+              label="Filiere (pour detection auto du niveau)"
+              fullWidth
+              value={importFiliere}
+              onChange={(e) => setImportFiliere(e.target.value)}
+              sx={{ mt: 1.5 }}
+              helperText={importFiliere ? 'Le niveau sera detecte automatiquement depuis le code UE (ex: INF3xx → L3)' : ''}
+            >
+              <MenuItem value="">-- Aucune (pas de detection auto) --</MenuItem>
+              {filieres
+                .filter((f) => !selectedDept || f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
+                .map((f) => (
+                  <MenuItem key={f.id} value={f.id}>
+                    {f.nom_filiere}
+                  </MenuItem>
+                ))}
+            </TextField>
             <Autocomplete
               multiple
               size="small"
@@ -554,7 +598,7 @@ export default function UEsPage() {
               value={importNiveaux}
               onChange={(_, val) => setImportNiveaux(val)}
               isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-              renderInput={(params) => <TextField {...params} label={`Classe (optionnel)${selectedDept ? ' - filtre par departement' : ''}`} />}
+              renderInput={(params) => <TextField {...params} label={`Niveaux supplementaires (optionnel)${selectedDept ? ' - filtre par departement' : ''}`} />}
               sx={{ mt: 1.5 }}
             />
           </Box>
