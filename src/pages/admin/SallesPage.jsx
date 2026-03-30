@@ -14,7 +14,7 @@ import {
   Skeleton,
   Chip,
 } from '@mui/material';
-import { Add, Edit, Delete, FileUpload } from '@mui/icons-material';
+import { Add, Edit, Delete, FileUpload, DeleteForever } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -30,6 +30,7 @@ export default function SallesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const load = async () => {
@@ -83,6 +84,17 @@ export default function SallesPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    try {
+      const res = await sallesService.deleteAll();
+      toast.success(`${res.data.deleted} salle(s) supprimee(s)`);
+      setDeleteAllOpen(false);
+      load();
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -130,6 +142,16 @@ export default function SallesPage() {
         description="Gestion des salles de cours"
         action={
           <Box sx={{ display: 'flex', gap: 1 }}>
+            {items.length > 0 && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteForever />}
+                onClick={() => setDeleteAllOpen(true)}
+              >
+                Tout supprimer
+              </Button>
+            )}
             <input
               type="file"
               accept=".xlsx,.xls"
@@ -204,6 +226,16 @@ export default function SallesPage() {
         title="Supprimer la salle"
         message="Etes-vous sur de vouloir supprimer cette salle ?"
         confirmText="Supprimer"
+        confirmColor="error"
+      />
+
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAll}
+        title="Supprimer toutes les salles"
+        message={`Etes-vous sur de vouloir supprimer les ${items.length} salle(s) ? Cette action est irreversible.`}
+        confirmText="Tout supprimer"
         confirmColor="error"
       />
     </Box>

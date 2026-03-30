@@ -23,7 +23,7 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete, FileUpload, Close } from '@mui/icons-material';
+import { Add, Edit, Delete, FileUpload, Close, DeleteForever } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
@@ -61,6 +61,7 @@ export default function UEsPage() {
   const [importSemestre, setImportSemestre] = useState('');
   const [importNiveaux, setImportNiveaux] = useState([]);
   const [importFiliere, setImportFiliere] = useState('');
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -184,6 +185,17 @@ export default function UEsPage() {
       load();
     } catch {
       toast.error('Erreur suppression');
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const res = await unitesEnseignementService.deleteAll();
+      toast.success(`${res.data.deleted} UE(s) supprimee(s)`);
+      setDeleteAllOpen(false);
+      load();
+    } catch {
+      toast.error('Erreur lors de la suppression');
     }
   };
 
@@ -463,6 +475,11 @@ export default function UEsPage() {
         description="Gestion des UEs"
         action={
           <Box sx={{ display: 'flex', gap: 1 }}>
+            {items.length > 0 && (
+              <Button variant="outlined" color="error" startIcon={<DeleteForever />} onClick={() => setDeleteAllOpen(true)}>
+                Tout supprimer
+              </Button>
+            )}
             <Button variant="outlined" startIcon={<FileUpload />} onClick={() => fileInputRef.current?.click()}>
               Importer
             </Button>
@@ -590,6 +607,16 @@ export default function UEsPage() {
         title="Supprimer l'UE"
         message="Etes-vous sur de vouloir supprimer cette unite d'enseignement ?"
         confirmText="Supprimer"
+        confirmColor="error"
+      />
+
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAll}
+        title="Supprimer toutes les UEs"
+        message={`Etes-vous sur de vouloir supprimer les ${items.length} UE(s) ? Cette action est irreversible.`}
+        confirmText="Tout supprimer"
         confirmColor="error"
       />
 

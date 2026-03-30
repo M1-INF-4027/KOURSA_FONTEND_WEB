@@ -19,7 +19,7 @@ import {
   Chip,
   Typography,
 } from '@mui/material';
-import { Delete, PlaylistAdd, FileUpload } from '@mui/icons-material';
+import { Delete, PlaylistAdd, FileUpload, DeleteForever } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
@@ -44,6 +44,7 @@ export default function AdminWhitelistPage() {
   // Delete confirm
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const load = async () => {
     if (!selectedDept) return;
@@ -127,6 +128,17 @@ export default function AdminWhitelistPage() {
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      const res = await whitelistService.deleteAll({ departement: selectedDept });
+      toast.success(`${res.data.deleted} email(s) supprime(s)`);
+      setDeleteAllOpen(false);
+      load();
+    } catch {
+      toast.error('Erreur lors de la suppression');
+    }
   };
 
   const handleDelete = async () => {
@@ -215,6 +227,17 @@ export default function AdminWhitelistPage() {
                 >
                   Importer fichier
                 </Button>
+                {entries.length > 0 && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteForever />}
+                    onClick={() => setDeleteAllOpen(true)}
+                    sx={{ textTransform: 'none', fontWeight: 600 }}
+                  >
+                    Tout supprimer
+                  </Button>
+                )}
               </Box>
             </CardContent>
           </Card>
@@ -302,6 +325,16 @@ export default function AdminWhitelistPage() {
         title="Supprimer l'email"
         message="Voulez-vous retirer cet email de la liste des emails autorises ?"
         confirmText="Supprimer"
+        confirmColor="error"
+      />
+
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onClose={() => setDeleteAllOpen(false)}
+        onConfirm={handleDeleteAll}
+        title="Supprimer tous les emails"
+        message={`Etes-vous sur de vouloir supprimer les ${entries.length} email(s) autorises ? Cette action est irreversible.`}
+        confirmText="Tout supprimer"
         confirmColor="error"
       />
     </Box>

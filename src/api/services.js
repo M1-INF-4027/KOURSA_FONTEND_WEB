@@ -104,6 +104,7 @@ export const whitelistService = {
   create: (data) => api.post('/users/whitelist/', data),
   bulkCreate: (data) => api.post('/users/whitelist/bulk/', data),
   delete: (id) => api.delete(`/users/whitelist/${id}/`),
+  deleteAll: (params) => api.delete('/users/whitelist/delete-all/', { params }),
 };
 
 // ==================== ACADEMIC ====================
@@ -146,6 +147,7 @@ export const sallesService = {
   create: (data) => api.post('/academic/salles/', data),
   update: (id, data) => api.patch(`/academic/salles/${id}/`, data),
   delete: (id) => api.delete(`/academic/salles/${id}/`),
+  deleteAll: () => api.delete('/academic/salles/delete-all/'),
   import: (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -164,6 +166,7 @@ export const unitesEnseignementService = {
   create: (data) => api.post('/teaching/unites-enseignement/', data),
   update: (id, data) => api.patch(`/teaching/unites-enseignement/${id}/`, data),
   delete: (id) => api.delete(`/teaching/unites-enseignement/${id}/`),
+  deleteAll: () => api.delete('/teaching/unites-enseignement/delete-all/'),
   getMesDelegues: () => api.get('/teaching/unites-enseignement/mes-delegues/'),
 };
 
