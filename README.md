@@ -189,23 +189,32 @@ Le bouton est present sur :
 
 ## Import de donnees
 
+### Import des salles
+- Bouton "Importer" sur la page Salles
+- Format Excel : colonne `nom_salle`
+- Les salles existantes sont ignorees (pas de doublons)
+
 ### Import UEs (admin et chef)
 - Bouton "Importer" sur la page UEs
-- Format Excel attendu : colonnes `code`, `libelle`, `semestre`
+- Colonnes obligatoires : `Code` (ou `Codes_2025-2026`), `Libelle` (ou `Intitule`)
+- Colonnes optionnelles : `Semestre`/`SEM`, `Niveau` (L1-M2), `Enseignant` (matche par nom)
+- Selection d'une filiere pour detection auto du niveau via code UE (INF3xx → L3, INF4xx → M1)
 - Apercu avant import avec validation ligne par ligne
-- Selection du semestre et des niveaux par defaut
+- Les UEs existantes sont mises a jour (niveaux et enseignants fusionnes)
 
 ### Import Whitelist (admin et chef)
 - Textarea pour coller les emails (un par ligne)
+- Bouton "Importer fichier" pour import depuis Excel
 - Selection du role (ENSEIGNANT ou DELEGUE)
-- Creation en masse via l'endpoint `/api/users/whitelist/bulk/`
+- Les emails deja presents sont ignores
 
 ### Fichiers d'import pre-segmentes
 Des fichiers Excel prets a l'import sont disponibles dans `Ressources/Fichiers_Import/` :
 | Fichier | Section d'import | Contenu |
 |---|---|---|
-| `Import_Whitelist_Fonda.xlsx` | Whitelist | 25 emails enseignants fondamental |
-| `Import_Whitelist_Pro.xlsx` | Whitelist | 22 emails enseignants professionnel |
+| `Import_Salles.xlsx` | Salles | 32 salles du campus |
+| `Import_Emails_Enseignants_Fonda.xlsx` | Whitelist | 25 emails enseignants fondamental |
+| `Import_Emails_Enseignants_Pro.xlsx` | Whitelist | 25 emails enseignants professionnel |
 | `Import_UEs_Fonda.xlsx` | UEs | 188 UEs filiere fondamentale |
 | `Import_UEs_Pro.xlsx` | UEs | 122 UEs filiere professionnelle |
 | `Import_Affectations_Fonda.xlsx` | Reference | Mapping UE → Enseignant (fondamental) |
@@ -276,9 +285,16 @@ Les fichiers sont generes dans le dossier `dist/`.
 
 ---
 
+## Documentation
+
+- **Manuel d'utilisation** : `documentation_koursa/Manuel_Utilisation_Koursa.pdf` (13 pages)
+- **Documentation API** : https://koursa.duckdns.org/swagger/
+
+---
+
 ## Equipe
 
-Projet realise par **M1 INF 4027** - Master 1 Informatique.
+Projet realise par **M1 INF 4027** - Master 1 Informatique, Universite de Yaounde I.
 
 ## Licence
 
