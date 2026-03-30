@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -14,7 +14,7 @@ import {
   Skeleton,
   Chip,
 } from '@mui/material';
-import { Add, Edit, Delete } from '@mui/icons-material';
+import { Add, Edit, Delete, FileUpload } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -26,10 +26,11 @@ export default function SallesPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nom_salle: '', batiment: '', capacite: '' });
+  const [form, setForm] = useState({ nom_salle: '' });
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const fileInputRef = useRef(null);
 
   const load = async () => {
     try {
@@ -46,10 +47,7 @@ export default function SallesPage() {
 
   const handleOpen = (item = null) => {
     setEditing(item);
-    setForm(item
-      ? { nom_salle: item.nom_salle, batiment: item.batiment || '', capacite: item.capacite ?? '' }
-      : { nom_salle: '', batiment: '', capacite: '' }
-    );
+    setForm(item ? { nom_salle: item.nom_salle } : { nom_salle: '' });
     setDialogOpen(true);
   };
 
@@ -57,12 +55,7 @@ export default function SallesPage() {
     if (!form.nom_salle.trim()) return;
     setSaving(true);
     try {
-      const data = {
-        nom_salle: form.nom_salle.trim(),
-        batiment: form.batiment.trim(),
-        capacite: form.capacite === '' ? null : Number(form.capacite),
-        est_active: true,
-      };
+      const data = { nom_salle: form.nom_salle.trim(), est_active: true };
       if (editing) {
         await sallesService.update(editing.id, data);
         toast.success('Salle modifiee');
@@ -90,10 +83,23 @@ export default function SallesPage() {
     }
   };
 
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await sallesService.import(file);
+      const { created, skipped } = res.data;
+      toast.success(`Import termine : ${created} creee(s), ${skipped} existante(s)`);
+      load();
+    } catch {
+      toast.error("Erreur lors de l'import");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const columns = [
     { field: 'nom_salle', label: 'Nom de la salle' },
-    { field: 'batiment', label: 'Batiment' },
-    { field: 'capacite', label: 'Capacite' },
     {
       field: 'est_active',
       label: 'Statut',
@@ -123,9 +129,25 @@ export default function SallesPage() {
         title="Salles"
         description="Gestion des salles de cours"
         action={
-          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
-            Ajouter
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              hidden
+              ref={fileInputRef}
+              onChange={handleImport}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<FileUpload />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Importer
+            </Button>
+            <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
+              Ajouter
+            </Button>
+          </Box>
         }
       />
 
@@ -134,7 +156,7 @@ export default function SallesPage() {
           <DataTable
             columns={columns}
             rows={items}
-            searchFields={['nom_salle', 'batiment']}
+            searchFields={['nom_salle']}
             actions={(row) => (
               <>
                 <Tooltip title="Modifier">
@@ -164,20 +186,7 @@ export default function SallesPage() {
             value={form.nom_salle}
             onChange={(e) => setForm({ ...form, nom_salle: e.target.value })}
             autoFocus
-          />
-          <TextField
-            label="Batiment"
-            fullWidth
-            value={form.batiment}
-            onChange={(e) => setForm({ ...form, batiment: e.target.value })}
-          />
-          <TextField
-            label="Capacite"
-            fullWidth
-            type="number"
-            value={form.capacite}
-            onChange={(e) => setForm({ ...form, capacite: e.target.value })}
-            inputProps={{ min: 0 }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

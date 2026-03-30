@@ -146,6 +146,13 @@ export const sallesService = {
   create: (data) => api.post('/academic/salles/', data),
   update: (id, data) => api.patch(`/academic/salles/${id}/`, data),
   delete: (id) => api.delete(`/academic/salles/${id}/`),
+  import: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/academic/salles/import/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // ==================== TEACHING ====================

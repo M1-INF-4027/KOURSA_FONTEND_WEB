@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Card,
@@ -14,7 +14,7 @@ import {
   Chip,
   Skeleton,
 } from '@mui/material';
-import { Add, Edit, Delete, MeetingRoom } from '@mui/icons-material';
+import { Add, Edit, Delete, MeetingRoom, FileUpload } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import { sallesService } from '../../../api/services';
 
@@ -24,8 +24,9 @@ export default function StepSalles({ onNext, onBack }) {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nom_salle: '', batiment: '', capacite: '' });
+  const [form, setForm] = useState({ nom_salle: '' });
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef(null);
 
   const load = async () => {
     try {
@@ -42,10 +43,7 @@ export default function StepSalles({ onNext, onBack }) {
 
   const openDialog = (salle = null) => {
     setEditing(salle);
-    setForm(salle
-      ? { nom_salle: salle.nom_salle, batiment: salle.batiment || '', capacite: salle.capacite ?? '' }
-      : { nom_salle: '', batiment: '', capacite: '' }
-    );
+    setForm(salle ? { nom_salle: salle.nom_salle } : { nom_salle: '' });
     setDialogOpen(true);
   };
 
@@ -53,12 +51,7 @@ export default function StepSalles({ onNext, onBack }) {
     if (!form.nom_salle.trim()) return;
     setSaving(true);
     try {
-      const data = {
-        nom_salle: form.nom_salle.trim(),
-        batiment: form.batiment.trim(),
-        capacite: form.capacite === '' ? null : Number(form.capacite),
-        est_active: true,
-      };
+      const data = { nom_salle: form.nom_salle.trim(), est_active: true };
       if (editing) {
         await sallesService.update(editing.id, data);
         toast.success('Salle modifiee');
@@ -85,6 +78,21 @@ export default function StepSalles({ onNext, onBack }) {
     }
   };
 
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await sallesService.import(file);
+      const { created, skipped } = res.data;
+      toast.success(`Import termine : ${created} creee(s), ${skipped} existante(s)`);
+      load();
+    } catch {
+      toast.error("Erreur lors de l'import");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const canProceed = salles.length >= 1;
 
   if (loading) {
@@ -105,7 +113,21 @@ export default function StepSalles({ onNext, onBack }) {
         Ajoutez les salles de cours. Vous devez avoir au moins une salle pour continuer.
       </Typography>
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 1 }}>
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          hidden
+          ref={fileInputRef}
+          onChange={handleImport}
+        />
+        <Button
+          variant="outlined"
+          startIcon={<FileUpload />}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          Importer
+        </Button>
         <Button variant="outlined" startIcon={<Add />} onClick={() => openDialog()}>
           Ajouter une salle
         </Button>
@@ -116,7 +138,7 @@ export default function StepSalles({ onNext, onBack }) {
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
             <MeetingRoom sx={{ fontSize: 48, color: '#7E7E7E', mb: 1 }} />
             <Typography color="text.secondary">
-              Aucune salle. Commencez par en ajouter une.
+              Aucune salle. Commencez par en ajouter une ou importer un fichier Excel.
             </Typography>
           </CardContent>
         </Card>
@@ -131,12 +153,6 @@ export default function StepSalles({ onNext, onBack }) {
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
                   {salle.nom_salle}
                 </Typography>
-                {salle.batiment && (
-                  <Chip label={salle.batiment} size="small" variant="outlined" />
-                )}
-                {salle.capacite && (
-                  <Chip label={`${salle.capacite} places`} size="small" variant="outlined" />
-                )}
               </Box>
               <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <IconButton size="small" onClick={() => openDialog(salle)}>
@@ -174,20 +190,6 @@ export default function StepSalles({ onNext, onBack }) {
             onChange={(e) => setForm({ ...form, nom_salle: e.target.value })}
             autoFocus
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-          />
-          <TextField
-            label="Batiment"
-            fullWidth
-            value={form.batiment}
-            onChange={(e) => setForm({ ...form, batiment: e.target.value })}
-          />
-          <TextField
-            label="Capacite"
-            fullWidth
-            type="number"
-            value={form.capacite}
-            onChange={(e) => setForm({ ...form, capacite: e.target.value })}
-            inputProps={{ min: 0 }}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
