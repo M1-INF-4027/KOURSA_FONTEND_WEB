@@ -34,11 +34,11 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
         source: "dist/*"
-        target: "/var/www/koursa-frontend"
+        target: "/home/koursa/koursa-frontend-dist"
         strip_components: 1
         rm: true
 
-    - name: Reload Nginx
+    - name: Publish and reload Nginx
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -46,5 +46,5 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
         script: |
-          sudo nginx -s reload
+          sudo /usr/local/bin/koursa-deploy-frontend
           echo "Frontend deployed successfully!"
