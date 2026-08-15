@@ -31,7 +31,7 @@ jobs:
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
-        password: ${{ secrets.VPS_PASSWORD }}
+        key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
         source: "dist/*"
         target: "/var/www/koursa-frontend"
@@ -43,11 +43,8 @@ jobs:
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
-        password: ${{ secrets.VPS_PASSWORD }}
+        key: ${{ secrets.VPS_SSH_KEY }}
         port: ${{ secrets.VPS_PORT }}
-        envs: VPS_PASSWORD
         script: |
-          echo "$VPS_PASSWORD" | sudo -S nginx -s reload
+          sudo nginx -s reload
           echo "Frontend deployed successfully!"
-      env:
-        VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}

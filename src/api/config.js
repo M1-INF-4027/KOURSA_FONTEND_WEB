@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://koursa.duckdns.org/api';
+const API_BASE_URL = 'https://koursa.arited.org/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

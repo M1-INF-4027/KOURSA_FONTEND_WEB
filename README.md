@@ -32,8 +32,8 @@ Application web React pour la plateforme **Koursa** - Systeme de gestion academi
 
 ## Deploiement Production
 
-- **URL:** https://koursa.duckdns.org
-- **Serveur:** 84.247.183.206 (softengine)
+- **URL:** https://koursa.arited.org
+- **Serveur:** 84.247.172.198 (softengine)
 - **SSL:** Let's Encrypt
 - **CI/CD:** GitHub Actions (build + deploy automatique sur push main)
 
@@ -140,7 +140,7 @@ Creer un fichier `.env` a la racine du projet (ou `.env.local` pour le dev) :
 
 | Variable | Description | Defaut |
 |----------|-------------|--------|
-| `VITE_API_URL` | URL de base de l'API backend | `http://localhost:8000/api` (dev) / `https://koursa.duckdns.org/api` (prod) |
+| `VITE_API_URL` | URL de base de l'API backend | `http://localhost:8000/api` (dev) / `https://koursa.arited.org/api` (prod) |
 
 Exemple `.env` :
 ```env
@@ -288,7 +288,7 @@ Les fichiers sont generes dans le dossier `dist/`.
 ## Documentation
 
 - **Manuel d'utilisation** : `documentation_koursa/Manuel_Utilisation_Koursa.pdf` (13 pages)
-- **Documentation API** : https://koursa.duckdns.org/swagger/
+- **Documentation API** : https://koursa.arited.org/swagger/
 
 ---
 
