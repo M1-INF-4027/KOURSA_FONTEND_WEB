@@ -89,45 +89,23 @@ export default function AdminWhitelistPage() {
     }
   };
 
-  const handleFileImport = (e) => {
+  const handleFileImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
 
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-        // Extract emails from first column (whatever the header name)
-        const emails = raw
-          .map((row) => {
-            const firstVal = Object.values(row)[0];
-            return String(firstVal).trim().toLowerCase();
-          })
-          .filter((e) => e && e.includes('@'));
-
-        if (!emails.length) {
-          toast.error('Aucun email valide trouve dans le fichier');
-          return;
-        }
-
-        const res = await whitelistService.bulkCreate({
-          emails,
-          role_type: bulkRoleType,
-          departement: Number(selectedDept),
-        });
-        const { created, skipped } = res.data;
-        if (created.length) toast.success(`${created.length} email(s) importe(s)`);
-        if (skipped.length) toast(`${skipped.length} deja present(s)`, { icon: '\u26A0\uFE0F', duration: 5000 });
-        load();
-      } catch {
-        toast.error("Erreur lors de l'import du fichier");
-      }
-    };
-    reader.readAsArrayBuffer(file);
+    // Le fichier part tel quel au serveur : il lit la colonne `role` ligne par
+    // ligne et retombe sur le role selectionne ici quand elle est absente.
+    try {
+      const res = await whitelistService.import(file, Number(selectedDept), bulkRoleType);
+      const { created = 0, skipped = 0, errors = [] } = res.data;
+      if (created) toast.success(`${created} email(s) importe(s)`);
+      if (skipped) toast(`${skipped} deja present(s)`, { icon: '\u26A0\uFE0F', duration: 5000 });
+      if (errors.length) toast.error(`Ligne ${errors[0].ligne} : ${errors[0].message}`);
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Erreur lors de l'import du fichier");
+    }
   };
 
   const handleDeleteAll = async () => {

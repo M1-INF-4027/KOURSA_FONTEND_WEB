@@ -17,14 +17,18 @@ import StepAnnee from './setup/StepAnnee';
 import StepStructure from './setup/StepStructure';
 import StepProgrammes from './setup/StepProgrammes';
 import StepSalles from './setup/StepSalles';
+import StepEnseignants from './setup/StepEnseignants';
 import StepUEs from './setup/StepUEs';
 import StepChefs from './setup/StepChefs';
 
+// L'ordre suit les dependances : les comptes enseignants doivent exister avant
+// l'import des UEs, sans quoi les affectations ne peuvent pas etre resolues.
 const steps = [
   'Annee academique',
   'Structure academique',
   'Programmes',
   'Salles',
+  'Enseignants',
   "Unites d'enseignement",
   'Chefs de departement',
 ];
@@ -47,7 +51,11 @@ export default function SetupWizardPage() {
         if (annee && !est_configuree) {
           setAnneeId(annee.id);
 
+          // Reprise a la premiere etape non satisfaite, dans l'ordre du wizard :
+          // 0 Annee, 1 Structure, 2 Programmes, 3 Salles, 4 Enseignants, 5 UEs, 6 Chefs
           if (checklist.ues_creees) {
+            setActiveStep(6);
+          } else if (checklist.enseignants_crees) {
             setActiveStep(5);
           } else if (checklist.salles_creees) {
             setActiveStep(4);
@@ -116,8 +124,10 @@ export default function SetupWizardPage() {
       case 3:
         return <StepSalles onNext={handleNext} onBack={handleBack} />;
       case 4:
-        return <StepUEs onNext={handleNext} onBack={handleBack} anneeId={anneeId} />;
+        return <StepEnseignants onNext={handleNext} onBack={handleBack} />;
       case 5:
+        return <StepUEs onNext={handleNext} onBack={handleBack} anneeId={anneeId} />;
+      case 6:
         return <StepChefs onComplete={handleComplete} onBack={handleBack} />;
       default:
         return null;

@@ -258,34 +258,9 @@ export default function UEsPage() {
 
   const isRowValid = (row) => row.code.trim() !== '' && row.libelle.trim() !== '';
 
-  // Detecte le niveau a partir du code UE (ex: INF352 → 3 → L3, INF4235 → 4 → M1)
-  const detectNiveauFromCode = (code) => {
-    // Cherche le premier chiffre apres les lettres : INF3xx → 3, ICT4xx → 4
-    const match = code.match(/^[A-Za-z]+(\d)/);
-    if (!match) return null;
-    const digit = parseInt(match[1], 10);
-    // 1→L1, 2→L2, 3→L3, 4→M1, 5→M2
-    const niveauMap = { 1: 'L1', 2: 'L2', 3: 'L3', 4: 'M1', 5: 'M2' };
-    return niveauMap[digit] || null;
-  };
-
-  const resolveNiveauForCode = (code, filiereId) => {
-    if (!filiereId || !code) return null;
-    const niveauName = detectNiveauFromCode(code);
-    if (!niveauName) return null;
-    return niveaux.find(
-      (n) => n.nom_niveau === niveauName && (n.filiere === Number(filiereId) || n.filiere_id === Number(filiereId))
-    ) || null;
-  };
-
-  // Resolve niveau from explicit column value (e.g. "L1", "M2") + filiere
-  const resolveNiveauFromColumn = (niveauStr, filiereId) => {
-    if (!niveauStr || !filiereId) return null;
-    const cleaned = niveauStr.trim().toUpperCase();
-    return niveaux.find(
-      (n) => n.nom_niveau === cleaned && (n.filiere === Number(filiereId) || n.filiere_id === Number(filiereId))
-    ) || null;
-  };
+  // La deduction du niveau depuis le code UE et la resolution du semestre sont
+  // desormais assurees par le serveur (common/import_utils.py), afin que les
+  // memes regles s'appliquent a tous les points d'entree.
 
   // Match enseignant by partial name (case-insensitive)
   const resolveEnseignant = (name) => {
@@ -299,116 +274,67 @@ export default function UEsPage() {
     }) || null;
   };
 
-  const resolveSemestre = (value) => {
-    if (!value) return null;
-    const num = parseInt(value, 10);
-    if (!isNaN(num)) {
-      const found = semestres.find((s) => s.numero === num);
-      if (found) return found.id;
-    }
-    // Try matching by string
-    const lower = value.toLowerCase();
-    const found = semestres.find((s) => String(s.numero) === lower || (s.libelle && s.libelle.toLowerCase().includes(lower)));
-    return found ? found.id : null;
-  };
-
   const handleImport = async () => {
     const validRows = importRows.filter(isRowValid);
     if (!validRows.length) return;
 
     setImporting(true);
-    let created = 0;
-    let updated = 0;
-    let failed = 0;
-    let lastError = '';
 
-    // Build lookups for matching existing UEs
-    // 1) Exact match: (code_ue, semestre_obj)  — same unique_together key
-    // 2) Fallback: code_ue only — catches orphans with wrong/null semestre_obj
-    const exactMap = {};
-    const codeMap = {};
-    items.forEach((ue) => {
-      const codeLower = ue.code_ue.trim().toLowerCase();
-      exactMap[`${codeLower}|${ue.semestre_obj || ''}`] = ue;
-      if (!codeMap[codeLower]) codeMap[codeLower] = ue;
+    // Les lignes eventuellement corrigees ou retirees dans l'apercu sont
+    // renvoyees sous forme d'un classeur, traite en un seul appel par le
+    // serveur (transaction unique, au lieu d'une requete par UE).
+    const entetes = ['code', 'libelle', 'semestre', 'niveau', 'enseignant'];
+    const donnees = validRows.map((row) => [
+      row.code.trim(),
+      row.libelle.trim(),
+      row.semestre || importSemestre || '',
+      row.niveau || '',
+      row.enseignant || '',
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([entetes, ...donnees]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'UEs');
+    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const fichier = new File([buffer], 'import_ues.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 
-    for (const row of validRows) {
-      try {
-        const code = row.code.trim();
-        const semestreId = resolveSemestre(row.semestre) || (importSemestre ? Number(importSemestre) : null);
-        const sem = semestreId ? semestres.find((s) => s.id === semestreId) : null;
+    try {
+      const semestreNumero = importSemestre
+        ? semestres.find((s) => s.id === Number(importSemestre))?.numero
+        : undefined;
+      const res = await unitesEnseignementService.import(fichier, {
+        filiere: importFiliere,
+        semestre: semestreNumero,
+        niveaux: importNiveaux
+          .map((n) => (typeof n === 'object' ? n.id : n))
+          .join(','),
+      });
 
-        // Niveaux: combine manual selection + auto from code + explicit column
-        const manualNiveauIds = importNiveaux.map((n) => (typeof n === 'object' ? n.id : n));
-        const autoNiveau = resolveNiveauForCode(code, importFiliere);
-        const columnNiveau = resolveNiveauFromColumn(row.niveau, importFiliere);
-        const allNiveauIds = [...new Set([
-          ...manualNiveauIds,
-          ...(autoNiveau ? [autoNiveau.id] : []),
-          ...(columnNiveau ? [columnNiveau.id] : []),
-        ])];
+      const { created = 0, updated = 0, errors = [] } = res.data;
+      const parts = [];
+      if (created) parts.push(`${created} creee(s)`);
+      if (updated) parts.push(`${updated} mise(s) a jour`);
+      if (errors.length) parts.push(`${errors.length} en erreur`);
 
-        // Enseignant: match by name (optional)
-        const matchedEnseignant = resolveEnseignant(row.enseignant);
-        const enseignantIds = matchedEnseignant ? [matchedEnseignant.id] : [];
-
-        const data = {
-          code_ue: code,
-          libelle_ue: row.libelle.trim(),
-          semestre_obj: semestreId,
-          semestre: sem ? sem.numero : undefined,
-          ...(allNiveauIds.length > 0 ? { niveaux: allNiveauIds } : {}),
-        };
-
-        const codeLower = code.toLowerCase();
-        const existing = exactMap[`${codeLower}|${semestreId || ''}`] || codeMap[codeLower];
-        if (existing) {
-          const existingNiveaux = (existing.niveaux || []).map((n) => (typeof n === 'object' ? n.id : n));
-          data.niveaux = [...new Set([...existingNiveaux, ...allNiveauIds])];
-          if (enseignantIds.length > 0) {
-            const existingEns = (existing.enseignants || []).map((e) => (typeof e === 'object' ? e.id : e));
-            data.enseignants = [...new Set([...existingEns, ...enseignantIds])];
-          }
-          await unitesEnseignementService.update(existing.id, data);
-          updated++;
-        } else {
-          if (enseignantIds.length > 0) data.enseignants = enseignantIds;
-          await unitesEnseignementService.create(data);
-          created++;
-        }
-      } catch (err) {
-        failed++;
-        const detail = err.response?.data;
-        if (detail && typeof detail === 'object' && !lastError) {
-          lastError = detail.detail || detail.non_field_errors?.[0]
-            || Object.entries(detail).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`).join(' | ');
-        }
+      if (created || updated) {
+        toast.success(parts.join(', ') || 'Import termine');
       }
+      if (errors.length) {
+        toast.error(`Ligne ${errors[0].ligne} : ${errors[0].message}`);
+      }
+
+      setImportDialogOpen(false);
+      setImportRows([]);
+      setImportSemestre('');
+      setImportNiveaux([]);
+      setImportFiliere('');
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Erreur lors de l'import");
+    } finally {
+      setImporting(false);
+      load();
     }
-
-    setImporting(false);
-    setImportDialogOpen(false);
-    setImportRows([]);
-    setImportSemestre('');
-    setImportNiveaux([]);
-    setImportFiliere('');
-
-    const parts = [];
-    if (created > 0) parts.push(`${created} creee(s)`);
-    if (updated > 0) parts.push(`${updated} mise(s) a jour`);
-    if (failed > 0) parts.push(`${failed} echouee(s)`);
-
-    if (failed === 0) {
-      toast.success(parts.join(', '));
-    } else if (created > 0 || updated > 0) {
-      toast.success(parts.join(', '));
-      if (lastError) toast.error(lastError);
-    } else {
-      toast.error(lastError || `Import echoue (${failed} erreur(s))`);
-    }
-
-    load();
   };
 
   const validCount = importRows.filter(isRowValid).length;

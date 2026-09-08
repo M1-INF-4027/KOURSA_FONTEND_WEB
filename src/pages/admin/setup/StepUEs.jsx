@@ -19,12 +19,20 @@ import {
   ToggleButtonGroup,
 } from '@mui/material';
 import { Add, Edit, Delete, MenuBook } from '@mui/icons-material';
+import {
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from '@mui/material';
 import toast from 'react-hot-toast';
+import ImportPanel from '../../../components/common/ImportPanel';
 import {
   unitesEnseignementService,
   usersService,
   niveauxService,
   semestresService,
+  filieresService,
 } from '../../../api/services';
 
 export default function StepUEs({ onNext, onBack, anneeId }) {
@@ -33,6 +41,10 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
   const [niveaux, setNiveaux] = useState([]);
   const [semestres, setSemestres] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Import : la filiere sert a rattacher les niveaux deduits des codes UE.
+  const [filieres, setFilieres] = useState([]);
+  const [filiereImport, setFiliereImport] = useState('');
 
   // Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -52,12 +64,15 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
 
   const load = async () => {
     try {
-      const [ueRes, usrRes, nivRes, semRes] = await Promise.all([
+      const [ueRes, usrRes, nivRes, semRes, filRes] = await Promise.all([
         unitesEnseignementService.getAll(),
         usersService.getAll(),
         niveauxService.getAll(),
         semestresService.getAll(anneeId ? { annee_academique: anneeId } : {}),
+        filieresService.getAll(),
       ]);
+      setFilieres(filRes.data);
+      setFiliereImport((prev) => prev || (filRes.data.length === 1 ? filRes.data[0].id : ''));
       setUes(ueRes.data);
       setEnseignants(
         usrRes.data.filter((u) =>
@@ -205,6 +220,68 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Ajoutez les unites d'enseignement (UE) pour cette annee. Chaque UE est rattachee a un semestre et peut etre affectee a des enseignants et des niveaux.
       </Typography>
+
+      {filieres.length > 0 && (
+        <FormControl size="small" sx={{ minWidth: 280, mb: 2 }}>
+          <InputLabel>Filiere des fichiers importes</InputLabel>
+          <Select
+            value={filiereImport}
+            label="Filiere des fichiers importes"
+            onChange={(e) => setFiliereImport(e.target.value)}
+          >
+            {filieres.map((f) => (
+              <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      <ImportPanel
+        titre="Unites d'enseignement"
+        description={
+          "Le niveau est deduit du code de l'UE (INF3xxx devient L3) ou lu dans la " +
+          'colonne niveau si elle est presente.'
+        }
+        colonnes={[
+          { cle: 'code', requis: true, exemple: 'INF3111' },
+          { cle: 'libelle', requis: true, exemple: 'Compilation' },
+          { cle: 'semestre', exemple: '1' },
+          { cle: 'niveau', exemple: 'L3' },
+        ]}
+        disabled={!filiereImport}
+        raisonBlocage="Choisissez d'abord la filiere concernee par le fichier."
+        onImport={(file) =>
+          unitesEnseignementService.import(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onDone={load}
+      />
+
+      <ImportPanel
+        titre="Affectations enseignant / UE"
+        description={
+          "A importer apres les UEs. L'enseignant est retrouve par son email, " +
+          'a defaut par son nom. Les comptes doivent avoir ete crees a l\'etape precedente.'
+        }
+        colonnes={[
+          { cle: 'code_ue', requis: true, exemple: 'INF3111' },
+          { cle: 'enseignant_email', exemple: 'enseignant@exemple.cm' },
+          { cle: 'enseignant_nom', exemple: 'ATSA' },
+          { cle: 'semestre', exemple: '1' },
+          { cle: 'niveau', exemple: 'L3' },
+        ]}
+        disabled={ues.length === 0}
+        raisonBlocage="Importez ou creez d'abord les unites d'enseignement."
+        onImport={(file) =>
+          unitesEnseignementService.importAffectations(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onDone={load}
+      />
 
       {/* Add UE button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>

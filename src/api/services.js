@@ -16,6 +16,21 @@ async function fetchAll(url, params) {
   return unwrap(res);
 }
 
+// Helper: poste un fichier Excel vers un endpoint d'import.
+// `champs` ajoute les parametres attendus par certains imports (filiere, departement...).
+function postFichier(url, file, champs = {}) {
+  const formData = new FormData();
+  formData.append('file', file);
+  Object.entries(champs).forEach(([cle, valeur]) => {
+    if (valeur !== undefined && valeur !== null && valeur !== '') {
+      formData.append(cle, valeur);
+    }
+  });
+  return api.post(url, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
 // ==================== AUTH ====================
 export const authService = {
   login: (credentials) => api.post('/auth/token/', credentials),
@@ -91,6 +106,8 @@ export const usersService = {
   register: (data) => api.post('/users/utilisateurs/', data),
   changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
   resetDatabase: (password) => api.post('/users/utilisateurs/reset-database/', { password }),
+  importEnseignants: (file) =>
+    postFichier('/users/utilisateurs/import-enseignants/', file),
 };
 
 export const rolesService = {
@@ -105,6 +122,11 @@ export const whitelistService = {
   bulkCreate: (data) => api.post('/users/whitelist/bulk/', data),
   delete: (id) => api.delete(`/users/whitelist/${id}/`),
   deleteAll: (params) => api.delete('/users/whitelist/delete-all/', { params }),
+  import: (file, departement, roleDefaut) =>
+    postFichier('/users/whitelist/import/', file, {
+      departement,
+      role_defaut: roleDefaut,
+    }),
 };
 
 // ==================== ACADEMIC ====================
@@ -148,13 +170,7 @@ export const sallesService = {
   update: (id, data) => api.patch(`/academic/salles/${id}/`, data),
   delete: (id) => api.delete(`/academic/salles/${id}/`),
   deleteAll: () => api.delete('/academic/salles/delete-all/'),
-  import: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/academic/salles/import/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
+  import: (file) => postFichier('/academic/salles/import/', file),
 };
 
 // ==================== TEACHING ====================
@@ -167,6 +183,18 @@ export const unitesEnseignementService = {
   update: (id, data) => api.patch(`/teaching/unites-enseignement/${id}/`, data),
   delete: (id) => api.delete(`/teaching/unites-enseignement/${id}/`),
   deleteAll: () => api.delete('/teaching/unites-enseignement/delete-all/'),
+  import: (file, { filiere, semestre, niveaux, anneeAcademique } = {}) =>
+    postFichier('/teaching/unites-enseignement/import/', file, {
+      filiere,
+      semestre,
+      niveaux,
+      annee_academique: anneeAcademique,
+    }),
+  importAffectations: (file, { filiere, anneeAcademique } = {}) =>
+    postFichier('/teaching/unites-enseignement/import-affectations/', file, {
+      filiere,
+      annee_academique: anneeAcademique,
+    }),
   getMesDelegues: () => api.get('/teaching/unites-enseignement/mes-delegues/'),
 };
 

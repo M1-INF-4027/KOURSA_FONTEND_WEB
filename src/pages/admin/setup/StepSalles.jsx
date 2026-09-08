@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -14,8 +14,9 @@ import {
   Chip,
   Skeleton,
 } from '@mui/material';
-import { Add, Edit, Delete, MeetingRoom, FileUpload } from '@mui/icons-material';
+import { Add, Edit, Delete, MeetingRoom } from '@mui/icons-material';
 import toast from 'react-hot-toast';
+import ImportPanel from '../../../components/common/ImportPanel';
 import { sallesService } from '../../../api/services';
 
 export default function StepSalles({ onNext, onBack }) {
@@ -26,7 +27,6 @@ export default function StepSalles({ onNext, onBack }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ nom_salle: '' });
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef(null);
 
   const load = async () => {
     try {
@@ -78,21 +78,6 @@ export default function StepSalles({ onNext, onBack }) {
     }
   };
 
-  const handleImport = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const res = await sallesService.import(file);
-      const { created, skipped } = res.data;
-      toast.success(`Import termine : ${created} creee(s), ${skipped} existante(s)`);
-      load();
-    } catch {
-      toast.error("Erreur lors de l'import");
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
   const canProceed = salles.length >= 1;
 
   if (loading) {
@@ -113,21 +98,15 @@ export default function StepSalles({ onNext, onBack }) {
         Ajoutez les salles de cours. Vous devez avoir au moins une salle pour continuer.
       </Typography>
 
+      <ImportPanel
+        titre="Salles"
+        description="Une salle deja enregistree est ignoree : le fichier peut etre rejoue sans risque."
+        colonnes={[{ cle: 'nom_salle', requis: true, exemple: 'A100' }]}
+        onImport={(file) => sallesService.import(file)}
+        onDone={load}
+      />
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 1 }}>
-        <input
-          type="file"
-          accept=".xlsx,.xls"
-          hidden
-          ref={fileInputRef}
-          onChange={handleImport}
-        />
-        <Button
-          variant="outlined"
-          startIcon={<FileUpload />}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          Importer
-        </Button>
         <Button variant="outlined" startIcon={<Add />} onClick={() => openDialog()}>
           Ajouter une salle
         </Button>

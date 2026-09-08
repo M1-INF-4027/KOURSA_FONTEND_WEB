@@ -14,6 +14,11 @@ import {
   Chip,
   Alert,
   Grid,
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -22,9 +27,16 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { configurationService, departementsService, usersService } from '../../api/services';
+import {
+  configurationService,
+  departementsService,
+  usersService,
+  unitesEnseignementService,
+  filieresService,
+} from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import PageHeader from '../../components/common/PageHeader';
+import ImportPanel from '../../components/common/ImportPanel';
 
 dayjs.locale('fr');
 
@@ -243,6 +255,27 @@ function StepReconduction({ anneeId, onNext, onBack }) {
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
 
+  // Import : alternative a la reconduction, pour une annee dont le programme change.
+  const [filieres, setFilieres] = useState([]);
+  const [filiereImport, setFiliereImport] = useState('');
+  const [nbUes, setNbUes] = useState(0);
+
+  const chargerContexte = async () => {
+    try {
+      const [filRes, ueRes] = await Promise.all([
+        filieresService.getAll(),
+        unitesEnseignementService.getByAnnee(anneeId),
+      ]);
+      setFilieres(filRes.data);
+      setFiliereImport((prev) => prev || (filRes.data.length === 1 ? filRes.data[0].id : ''));
+      setNbUes(ueRes.data.length);
+    } catch {
+      // Contexte optionnel : l'etape reste utilisable sans lui.
+    }
+  };
+
+  useEffect(() => { chargerContexte(); }, [anneeId]);
+
   const handleReconduire = async () => {
     setLoading(true);
     setError(null);
@@ -335,6 +368,70 @@ function StepReconduction({ anneeId, onNext, onBack }) {
         </Box>
       )}
 
+      <Divider sx={{ my: 3 }}>
+        <Chip label="ou importer les programmes" size="small" />
+      </Divider>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Si le programme change d'une annee sur l'autre, importez directement les
+        unites d'enseignement plutot que de les reconduire. La structure academique,
+        les salles et les comptes enseignants restent acquis.
+      </Typography>
+
+      {filieres.length > 0 && (
+        <FormControl size="small" sx={{ minWidth: 280, mb: 2 }}>
+          <InputLabel>Filiere des fichiers importes</InputLabel>
+          <Select
+            value={filiereImport}
+            label="Filiere des fichiers importes"
+            onChange={(e) => setFiliereImport(e.target.value)}
+          >
+            {filieres.map((f) => (
+              <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      <ImportPanel
+        titre="Unites d'enseignement"
+        description="Les UEs sont rattachees aux semestres de la nouvelle annee."
+        colonnes={[
+          { cle: 'code', requis: true, exemple: 'INF3111' },
+          { cle: 'libelle', requis: true, exemple: 'Compilation' },
+          { cle: 'semestre', exemple: '1' },
+          { cle: 'niveau', exemple: 'L3' },
+        ]}
+        disabled={!filiereImport}
+        raisonBlocage="Choisissez d'abord la filiere concernee par le fichier."
+        onImport={(file) =>
+          unitesEnseignementService.import(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onDone={chargerContexte}
+      />
+
+      <ImportPanel
+        titre="Affectations enseignant / UE"
+        colonnes={[
+          { cle: 'code_ue', requis: true, exemple: 'INF3111' },
+          { cle: 'enseignant_email', exemple: 'enseignant@exemple.cm' },
+          { cle: 'enseignant_nom', exemple: 'ATSA' },
+          { cle: 'semestre', exemple: '1' },
+        ]}
+        disabled={nbUes === 0}
+        raisonBlocage="Reconduisez ou importez d'abord les unites d'enseignement."
+        onImport={(file) =>
+          unitesEnseignementService.importAffectations(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onDone={chargerContexte}
+      />
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
         <Button variant="outlined" onClick={onBack}>
           Precedent
@@ -344,7 +441,7 @@ function StepReconduction({ anneeId, onNext, onBack }) {
           onClick={onNext}
           sx={{ minWidth: 160, bgcolor: '#001EA6', '&:hover': { bgcolor: '#001080' } }}
         >
-          {done ? 'Suivant' : 'Passer cette etape'}
+          {done || nbUes > 0 ? 'Suivant' : 'Passer cette etape'}
         </Button>
       </Box>
     </Box>
