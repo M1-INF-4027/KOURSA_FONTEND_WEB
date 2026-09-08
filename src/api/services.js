@@ -130,6 +130,11 @@ export const whitelistService = {
 };
 
 // ==================== ACADEMIC ====================
+export const structureService = {
+  // Importe la hierarchie complete : Faculte > Departement > Filiere > Niveau
+  import: (file) => postFichier('/academic/structure/import/', file),
+};
+
 export const facultesService = {
   getAll: () => fetchAll('/academic/facultes/'),
   getById: (id) => api.get(`/academic/facultes/${id}/`),

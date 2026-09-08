@@ -18,7 +18,8 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, School, AccountBalance } from '@mui/icons-material';
 import toast from 'react-hot-toast';
-import { facultesService, departementsService } from '../../../api/services';
+import ImportPanel from '../../../components/common/ImportPanel';
+import { facultesService, departementsService, structureService } from '../../../api/services';
 
 export default function StepStructure({ onNext, onBack }) {
   const [facultes, setFacultes] = useState([]);
@@ -156,6 +157,22 @@ export default function StepStructure({ onNext, onBack }) {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Creez les facultes et leurs departements. Vous devez avoir au moins une faculte et un departement pour continuer.
       </Typography>
+
+      <ImportPanel
+        titre="Hierarchie academique"
+        description={
+          'Une ligne par niveau. Faculte, departement et filiere sont crees au ' +
+          'passage s\'ils n\'existent pas : le fichier peut etre rejoue ou complete.'
+        }
+        colonnes={[
+          { cle: 'faculte', requis: true, exemple: 'Faculte des Sciences' },
+          { cle: 'departement', requis: true, exemple: 'Informatique' },
+          { cle: 'filiere', requis: true, exemple: 'Informatique Fondamentale' },
+          { cle: 'niveau', exemple: 'L1' },
+        ]}
+        onImport={(file) => structureService.import(file)}
+        onDone={load}
+      />
 
       {/* Add Faculty button */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
