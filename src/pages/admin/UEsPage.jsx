@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -15,17 +15,10 @@ import {
   Skeleton,
   Chip,
   Autocomplete,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Typography,
-  CircularProgress,
 } from '@mui/material';
-import { Add, Edit, Delete, FileUpload, Close, DeleteForever } from '@mui/icons-material';
-import * as XLSX from 'xlsx';
+import { Add, Edit, Delete, DeleteForever } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
+import ImportPanel from '../../components/common/ImportPanel';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DepartmentSelector from '../../components/common/DepartmentSelector';
@@ -54,12 +47,6 @@ export default function UEsPage() {
   const [formFiliere, setFormFiliere] = useState('');
 
   // Import CSV/Excel state
-  const fileInputRef = useRef(null);
-  const [importRows, setImportRows] = useState([]);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importSemestre, setImportSemestre] = useState('');
-  const [importNiveaux, setImportNiveaux] = useState([]);
   const [importFiliere, setImportFiliere] = useState('');
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
@@ -199,146 +186,6 @@ export default function UEsPage() {
     }
   };
 
-  // --- Import CSV/Excel logic ---
-  const normalizeHeader = (h) => {
-    const key = String(h).trim().toLowerCase().replace(/[\s_-]+/g, '_');
-    if (['code', 'code_ue', 'codes_2025_2026', 'code_ue_intitulé'].includes(key)) return 'code';
-    if (['libelle', 'libelle_ue', 'libellé', 'libellé_ue', 'intitulé', 'intitule'].includes(key)) return 'libelle';
-    if (['semestre', 'semestre_obj', 'sem'].includes(key)) return 'semestre';
-    if (['niveau'].includes(key)) return 'niveau';
-    if (['enseignant'].includes(key)) return 'enseignant';
-    return key;
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-        if (!raw.length) {
-          toast.error('Le fichier est vide');
-          return;
-        }
-
-        const headerMap = {};
-        Object.keys(raw[0]).forEach((h) => { headerMap[h] = normalizeHeader(h); });
-
-        const rows = raw.map((row, idx) => {
-          const mapped = {};
-          Object.entries(row).forEach(([k, v]) => { mapped[headerMap[k]] = String(v).trim(); });
-          return {
-            _idx: idx,
-            code: mapped.code || '',
-            libelle: mapped.libelle || '',
-            semestre: mapped.semestre || '',
-            niveau: mapped.niveau || '',
-            enseignant: mapped.enseignant || '',
-          };
-        });
-
-        setImportRows(rows);
-        setImportDialogOpen(true);
-      } catch {
-        toast.error('Impossible de lire le fichier');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  const removeImportRow = (idx) => {
-    setImportRows((prev) => prev.filter((r) => r._idx !== idx));
-  };
-
-  const isRowValid = (row) => row.code.trim() !== '' && row.libelle.trim() !== '';
-
-  // La deduction du niveau depuis le code UE et la resolution du semestre sont
-  // desormais assurees par le serveur (common/import_utils.py), afin que les
-  // memes regles s'appliquent a tous les points d'entree.
-
-  // Match enseignant by partial name (case-insensitive)
-  const resolveEnseignant = (name) => {
-    if (!name) return null;
-    const lower = name.trim().toLowerCase();
-    if (!lower) return null;
-    return enseignants.find((e) => {
-      const fullName = `${e.first_name} ${e.last_name}`.toLowerCase();
-      const lastName = (e.last_name || '').toLowerCase();
-      return fullName.includes(lower) || lastName.includes(lower) || lower.includes(lastName);
-    }) || null;
-  };
-
-  const handleImport = async () => {
-    const validRows = importRows.filter(isRowValid);
-    if (!validRows.length) return;
-
-    setImporting(true);
-
-    // Les lignes eventuellement corrigees ou retirees dans l'apercu sont
-    // renvoyees sous forme d'un classeur, traite en un seul appel par le
-    // serveur (transaction unique, au lieu d'une requete par UE).
-    const entetes = ['code', 'libelle', 'semestre', 'niveau', 'enseignant'];
-    const donnees = validRows.map((row) => [
-      row.code.trim(),
-      row.libelle.trim(),
-      row.semestre || importSemestre || '',
-      row.niveau || '',
-      row.enseignant || '',
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([entetes, ...donnees]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'UEs');
-    const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const fichier = new File([buffer], 'import_ues.xlsx', {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-
-    try {
-      const semestreNumero = importSemestre
-        ? semestres.find((s) => s.id === Number(importSemestre))?.numero
-        : undefined;
-      const res = await unitesEnseignementService.import(fichier, {
-        filiere: importFiliere,
-        semestre: semestreNumero,
-        niveaux: importNiveaux
-          .map((n) => (typeof n === 'object' ? n.id : n))
-          .join(','),
-      });
-
-      const { created = 0, updated = 0, errors = [] } = res.data;
-      const parts = [];
-      if (created) parts.push(`${created} creee(s)`);
-      if (updated) parts.push(`${updated} mise(s) a jour`);
-      if (errors.length) parts.push(`${errors.length} en erreur`);
-
-      if (created || updated) {
-        toast.success(parts.join(', ') || 'Import termine');
-      }
-      if (errors.length) {
-        toast.error(`Ligne ${errors[0].ligne} : ${errors[0].message}`);
-      }
-
-      setImportDialogOpen(false);
-      setImportRows([]);
-      setImportSemestre('');
-      setImportNiveaux([]);
-      setImportFiliere('');
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || "Erreur lors de l'import");
-    } finally {
-      setImporting(false);
-      load();
-    }
-  };
-
-  const validCount = importRows.filter(isRowValid).length;
-
   const columns = [
     { field: 'code_ue', label: 'Code' },
     { field: 'libelle_ue', label: 'Libelle' },
@@ -406,22 +253,54 @@ export default function UEsPage() {
                 Tout supprimer
               </Button>
             )}
-            <Button variant="outlined" startIcon={<FileUpload />} onClick={() => fileInputRef.current?.click()}>
-              Importer
-            </Button>
             <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
               Ajouter
             </Button>
           </Box>
         }
       />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv,.xlsx,.xls"
-        hidden
-        onChange={handleFileSelect}
+
+      <ImportPanel
+        titre="Unites d'enseignement"
+        description={
+          'Le fichier est analyse par le serveur, puis presente pour verification ' +
+          'avant tout enregistrement.'
+        }
+        colonnes={[
+          { cle: 'code', requis: true, exemple: 'INF3111' },
+          { cle: 'libelle', requis: true, exemple: 'Compilation' },
+          { cle: 'semestre', exemple: '1' },
+          { cle: 'niveau', exemple: 'L3' },
+        ]}
+        colonnesApercu={[
+          { cle: 'code', libelle: 'Code' },
+          { cle: 'libelle', libelle: 'Libelle' },
+          { cle: 'semestre', libelle: 'Sem.' },
+          { cle: 'niveau', libelle: 'Niveau' },
+        ]}
+        avertissement={!importFiliere
+          ? 'Choisissez la filiere ci-dessous : sans elle, les niveaux deduits des '
+            + 'codes UE ne seront pas rattaches.'
+          : undefined}
+        onSimuler={(file) => unitesEnseignementService.simuler(file, { filiere: importFiliere })}
+        onValiderLignes={(rows) =>
+          unitesEnseignementService.importerLignes(rows, { filiere: importFiliere })
+        }
+        onDone={load}
       />
+
+      <TextField
+        select
+        size="small"
+        label="Filiere des fichiers importes"
+        value={importFiliere}
+        onChange={(e) => setImportFiliere(e.target.value)}
+        sx={{ minWidth: 300, mb: 2 }}
+      >
+        {filieres.map((f) => (
+          <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+        ))}
+      </TextField>
 
       <DepartmentSelector value={selectedDept} onChange={setSelectedDept} departments={departments} />
 
@@ -547,124 +426,6 @@ export default function UEsPage() {
       />
 
       {/* Import preview dialog */}
-      <Dialog open={importDialogOpen} onClose={() => !importing && setImportDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Apercu de l&apos;import ({importRows.length} ligne{importRows.length > 1 ? 's' : ''})
-        </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
-            <TextField
-              select
-              size="small"
-              label="Semestre par defaut (applique si absent du fichier)"
-              fullWidth
-              value={importSemestre}
-              onChange={(e) => setImportSemestre(e.target.value)}
-            >
-              <MenuItem value="">-- Aucun --</MenuItem>
-              {semestres.map((s) => (
-                <MenuItem key={s.id} value={s.id}>
-                  Semestre {s.numero}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              size="small"
-              label="Filiere (pour detection auto du niveau)"
-              fullWidth
-              value={importFiliere}
-              onChange={(e) => setImportFiliere(e.target.value)}
-              sx={{ mt: 1.5 }}
-              helperText={importFiliere ? 'Le niveau sera detecte automatiquement depuis le code UE (ex: INF3xx → L3)' : ''}
-            >
-              <MenuItem value="">-- Aucune (pas de detection auto) --</MenuItem>
-              {filieres
-                .filter((f) => !selectedDept || f.departement === Number(selectedDept) || f.departement_id === Number(selectedDept))
-                .map((f) => (
-                  <MenuItem key={f.id} value={f.id}>
-                    {f.nom_filiere}
-                  </MenuItem>
-                ))}
-            </TextField>
-            <Autocomplete
-              multiple
-              size="small"
-              options={filteredNiveaux}
-              getOptionLabel={(o) => typeof o === 'object' ? `${o.nom_filiere || o.filiere_nom || ''} ${o.nom_niveau}`.trim() : String(o)}
-              value={importNiveaux}
-              onChange={(_, val) => setImportNiveaux(val)}
-              isOptionEqualToValue={(opt, val) => opt.id === (val?.id || val)}
-              renderInput={(params) => <TextField {...params} label={`Niveaux supplementaires (optionnel)${selectedDept ? ' - filtre par departement' : ''}`} />}
-              sx={{ mt: 1.5 }}
-            />
-          </Box>
-          {importRows.length === 0 ? (
-            <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Aucune ligne</Typography>
-          ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Code</TableCell>
-                  <TableCell>Libelle</TableCell>
-                  <TableCell>Semestre</TableCell>
-                  {importRows.some((r) => r.niveau) && <TableCell>Niveau</TableCell>}
-                  {importRows.some((r) => r.enseignant) && <TableCell>Enseignant</TableCell>}
-                  <TableCell align="center" sx={{ width: 80 }}>Statut</TableCell>
-                  <TableCell align="center" sx={{ width: 50 }} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {importRows.map((row) => {
-                  const valid = isRowValid(row);
-                  return (
-                    <TableRow key={row._idx} sx={!valid ? { bgcolor: 'error.50' } : undefined}>
-                      <TableCell>{row.code || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
-                      <TableCell>{row.libelle || <Typography variant="body2" color="error">Manquant</Typography>}</TableCell>
-                      <TableCell>{row.semestre || '-'}</TableCell>
-                      {importRows.some((r) => r.niveau) && <TableCell>{row.niveau || '-'}</TableCell>}
-                      {importRows.some((r) => r.enseignant) && (
-                        <TableCell>
-                          {row.enseignant ? (
-                            resolveEnseignant(row.enseignant)
-                              ? <Chip label={row.enseignant} size="small" color="success" variant="outlined" />
-                              : <Tooltip title="Non trouve dans les utilisateurs"><Chip label={row.enseignant} size="small" color="warning" variant="outlined" /></Tooltip>
-                          ) : '-'}
-                        </TableCell>
-                      )}
-                      <TableCell align="center">
-                        {valid ? (
-                          <Chip label="OK" size="small" color="success" variant="outlined" />
-                        ) : (
-                          <Chip label="Invalide" size="small" color="error" />
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <IconButton size="small" onClick={() => removeImportRow(row._idx)} disabled={importing}>
-                          <Close fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setImportDialogOpen(false)} color="inherit" disabled={importing}>
-            Annuler
-          </Button>
-          <Button
-            onClick={handleImport}
-            variant="contained"
-            disabled={importing || validCount === 0}
-            startIcon={importing ? <CircularProgress size={18} color="inherit" /> : <FileUpload />}
-          >
-            {importing ? 'Import en cours...' : `Importer ${validCount} UE(s)`}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }
