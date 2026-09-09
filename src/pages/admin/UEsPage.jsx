@@ -49,6 +49,10 @@ export default function UEsPage() {
   // Import CSV/Excel state
   const [importFiliere, setImportFiliere] = useState('');
   const [importOuvert, setImportOuvert] = useState(false);
+  // Deux fichiers distincts arrivent par ce meme bouton : le programme
+  // (codes et intitules) et l'affectation des enseignants. Ils partagent
+  // la colonne du code, d'ou la confusion possible entre les deux.
+  const [importType, setImportType] = useState('ues');
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const load = async () => {
@@ -379,45 +383,96 @@ export default function UEsPage() {
         <TextField
           select
           size="small"
+          fullWidth
+          label="Que contient le fichier ?"
+          value={importType}
+          onChange={(e) => setImportType(e.target.value)}
+          sx={{ mt: 1, mb: 2 }}
+        >
+          <MenuItem value="ues">Programme : codes et intitules des UEs</MenuItem>
+          <MenuItem value="affectations">Affectation des enseignants aux UEs</MenuItem>
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          fullWidth
           label="Filiere des fichiers importes"
           value={importFiliere}
           onChange={(e) => setImportFiliere(e.target.value)}
-          fullWidth
-          sx={{ mt: 1, mb: 2 }}
+          sx={{ mb: 2 }}
         >
           {filieres.map((f) => (
             <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
           ))}
         </TextField>
 
-        <ImportPanel
-          titre="Unites d'enseignement"
-          description={
-            'Le fichier est analyse par le serveur, puis presente pour verification ' +
-            'avant tout enregistrement.'
-          }
-          colonnes={[
-            { cle: 'code', requis: true, exemple: 'INF3111' },
-            { cle: 'libelle', requis: true, exemple: 'Compilation' },
-            { cle: 'semestre', exemple: '1' },
-            { cle: 'niveau', exemple: 'L3' },
-          ]}
-          colonnesApercu={[
-            { cle: 'code', libelle: 'Code' },
-            { cle: 'libelle', libelle: 'Libelle' },
-            { cle: 'semestre', libelle: 'Sem.' },
-            { cle: 'niveau', libelle: 'Niveau' },
-          ]}
-          avertissement={!importFiliere
-            ? 'Choisissez la filiere ci-dessus : sans elle, les niveaux deduits des '
-              + 'codes UE ne seront pas rattaches.'
-            : undefined}
-          onSimuler={(file) => unitesEnseignementService.simuler(file, { filiere: importFiliere })}
-          onValiderLignes={(rows) =>
-            unitesEnseignementService.importerLignes(rows, { filiere: importFiliere })
-          }
-          onDone={load}
-        />
+        {importType === 'ues' ? (
+          <ImportPanel
+            titre="Programme"
+            description={
+              'Le fichier est analyse par le serveur, puis presente pour verification '
+              + 'avant tout enregistrement.'
+            }
+            colonnes={[
+              { cle: 'code', requis: true, exemple: 'INF3111' },
+              { cle: 'libelle', requis: true, exemple: 'Compilation' },
+              { cle: 'semestre', exemple: '1' },
+              { cle: 'niveau', exemple: 'L3' },
+            ]}
+            colonnesApercu={[
+              { cle: 'code', libelle: 'Code' },
+              { cle: 'libelle', libelle: 'Libelle' },
+              { cle: 'semestre', libelle: 'Sem.' },
+              { cle: 'niveau', libelle: 'Niveau' },
+            ]}
+            avertissement={!importFiliere
+              ? 'Choisissez la filiere ci-dessus : sans elle, les niveaux deduits des '
+                + 'codes UE ne seront pas rattaches.'
+              : undefined}
+            onSimuler={(file) => unitesEnseignementService.simuler(file, { filiere: importFiliere })}
+            onValiderLignes={(rows) =>
+              unitesEnseignementService.importerLignes(rows, { filiere: importFiliere })
+            }
+            onDone={load}
+          />
+        ) : (
+          <ImportPanel
+            titre="Affectation des enseignants"
+            description={
+              "Rattache des enseignants a des UEs deja creees. Aucune UE n'est "
+              + 'creee par cet import.'
+            }
+            colonnes={[
+              { cle: 'code_ue', requis: true, exemple: 'INF3111' },
+              { cle: 'enseignant_email', requis: true, exemple: 'a.etoundi@ict4d.cm' },
+              { cle: 'enseignant_nom', exemple: 'ATSA' },
+              { cle: 'semestre', exemple: '1' },
+            ]}
+            colonnesApercu={[
+              { cle: 'code', libelle: 'Code UE' },
+              { cle: 'enseignant_email', libelle: 'Email' },
+              { cle: 'enseignant', libelle: 'Nom' },
+            ]}
+            parentLibelle="Enseignant"
+            parentOptions={enseignants.map((e) => ({
+              id: e.id,
+              libelle: `${e.first_name} ${e.last_name} — ${e.email}`,
+            }))}
+            autoriserCreationParent={false}
+            prerequis={[
+              { libelle: `${items.length} UE(s)`, ok: items.length > 0 },
+              { libelle: `${enseignants.length} enseignant(s)`, ok: enseignants.length > 0 },
+            ]}
+            onSimuler={(file) =>
+              unitesEnseignementService.simulerAffectations(file, { filiere: importFiliere })
+            }
+            onValiderLignes={(rows) =>
+              unitesEnseignementService.importerAffectationsLignes(rows, { filiere: importFiliere })
+            }
+            onDone={load}
+          />
+        )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setImportOuvert(false)} color="inherit">Fermer</Button>
