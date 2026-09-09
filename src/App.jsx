@@ -48,7 +48,6 @@ const UEsPage = lazy(() => import('./pages/admin/UEsPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const AdminFichesPage = lazy(() => import('./pages/admin/FichesPage'));
 const SetupWizardPage = lazy(() => import('./pages/admin/SetupWizardPage'));
-const NewYearWizardPage = lazy(() => import('./pages/admin/NewYearWizardPage'));
 const AnneesPage = lazy(() => import('./pages/admin/AnneesPage'));
 const AdminExportPage = lazy(() => import('./pages/admin/ExportPage'));
 
@@ -124,7 +123,9 @@ export default function App() {
                 <Route path="/admin/fiches" element={<AdminFichesPage />} />
                 <Route path="/admin/export" element={<AdminExportPage />} />
                 <Route path="/admin/annees" element={<AnneesPage />} />
-                <Route path="/admin/nouvelle-annee" element={<NewYearWizardPage />} />
+                {/* Parcours unifie : creer une annee et la configurer suivent le meme
+                      chemin, qui s'adapte a ce qui existe deja. */}
+                <Route path="/admin/nouvelle-annee" element={<Navigate to="/setup" replace />} />
                 <Route path="/admin/whitelist" element={<AdminWhitelistPage />} />
                 <Route path="/admin/suivi-hebdo" element={<AdminWeeklyTrackingPage />} />
               </Route>

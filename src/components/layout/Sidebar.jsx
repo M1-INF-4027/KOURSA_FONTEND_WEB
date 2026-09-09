@@ -96,7 +96,7 @@ const menuItems = {
     },
     { label: 'UEs', path: '/admin/ues', icon: <UEIcon /> },
     { label: 'Annees academiques', path: '/admin/annees', icon: <CalendarIcon /> },
-    { label: 'Nouvelle annee', path: '/admin/nouvelle-annee', icon: <NewYearIcon /> },
+    { label: 'Configuration', path: '/setup', icon: <NewYearIcon /> },
     { label: 'Utilisateurs', path: '/admin/utilisateurs', icon: <PeopleIcon /> },
     { label: 'Fiches', path: '/admin/fiches', icon: <FichesIcon /> },
     { label: 'Export', path: '/admin/export', icon: <ExportIcon /> },

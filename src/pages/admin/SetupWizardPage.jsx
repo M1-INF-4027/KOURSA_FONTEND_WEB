@@ -11,9 +11,10 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { configurationService } from '../../api/services';
+import { configurationService, unitesEnseignementService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import StepAnnee from './setup/StepAnnee';
+import StepReconduction from './setup/StepReconduction';
 import StepStructure from './setup/StepStructure';
 import StepProgrammes from './setup/StepProgrammes';
 import StepSalles from './setup/StepSalles';
@@ -21,29 +22,26 @@ import StepEnseignants from './setup/StepEnseignants';
 import StepUEs from './setup/StepUEs';
 import StepChefs from './setup/StepChefs';
 
+// Parcours unique de configuration, qui s'adapte a l'existant.
+//
 // L'ordre suit les dependances : les comptes enseignants doivent exister avant
 // l'import des UEs, sans quoi les affectations ne peuvent pas etre resolues.
-// Chaque etape est adossee a la cle de checklist qui atteste, cote serveur, que
-// les donnees existent vraiment. Le fil d'etapes reflete ainsi la base, et non la
-// simple progression de l'utilisateur.
-const CLES_CHECKLIST = [
-  'annee_creee',
-  'departements_crees',
-  'niveaux_crees',
-  'salles_creees',
-  'enseignants_crees',
-  'ues_creees',
-  null, // Chefs : aucune cle dediee, l'etape se termine a la validation finale
-];
-
-const steps = [
-  'Annee academique',
-  'Structure academique',
-  'Programmes',
-  'Salles',
-  'Enseignants',
-  "Unites d'enseignement",
-  'Chefs de departement',
+// Chaque etape porte la cle de checklist qui atteste, cote serveur, que les
+// donnees existent vraiment : le fil d'etapes reflete la base, et non la simple
+// progression de l'utilisateur.
+//
+// L'etape « Reconduction » n'apparait que si une annee precedente contient des
+// UEs a reprendre : proposer de reconduire un programme inexistant n'aurait
+// aucun sens sur une plateforme neuve.
+const ETAPES = [
+  { cle: 'annee', label: 'Annee academique', checklist: 'annee_creee' },
+  { cle: 'reconduction', label: 'Reconduction', checklist: null, optionnelle: true },
+  { cle: 'structure', label: 'Structure academique', checklist: 'departements_crees' },
+  { cle: 'programmes', label: 'Programmes', checklist: 'niveaux_crees' },
+  { cle: 'salles', label: 'Salles', checklist: 'salles_creees' },
+  { cle: 'enseignants', label: 'Enseignants', checklist: 'enseignants_crees' },
+  { cle: 'ues', label: "Unites d'enseignement", checklist: 'ues_creees' },
+  { cle: 'chefs', label: 'Chefs de departement', checklist: null },
 ];
 
 export default function SetupWizardPage() {
@@ -51,6 +49,7 @@ export default function SetupWizardPage() {
   const { refresh } = useConfig();
   const [activeStep, setActiveStep] = useState(0);
   const [checklist, setChecklist] = useState({});
+  const [reconductionPossible, setReconductionPossible] = useState(false);
   const [anneeId, setAnneeId] = useState(null);
   const [finishing, setFinishing] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -63,24 +62,26 @@ export default function SetupWizardPage() {
         const { annee, checklist, est_configuree } = res.data;
         setChecklist(checklist || {});
 
+        // La reconduction n'a de sens que s'il existe un programme anterieur.
+        try {
+          const ues = await unitesEnseignementService.getAll();
+          const anterieures = (ues.data || []).filter(
+            (u) => !annee || u.annee_academique !== annee.id
+          );
+          setReconductionPossible(anterieures.length > 0);
+        } catch {
+          setReconductionPossible(false);
+        }
+
         if (annee && !est_configuree) {
           setAnneeId(annee.id);
 
-          // Reprise a la premiere etape non satisfaite, dans l'ordre du wizard :
-          // 0 Annee, 1 Structure, 2 Programmes, 3 Salles, 4 Enseignants, 5 UEs, 6 Chefs
-          if (checklist.ues_creees) {
-            setActiveStep(6);
-          } else if (checklist.enseignants_crees) {
-            setActiveStep(5);
-          } else if (checklist.salles_creees) {
-            setActiveStep(4);
-          } else if (checklist.filieres_creees && checklist.niveaux_crees) {
-            setActiveStep(3);
-          } else if (checklist.facultes_creees && checklist.departements_crees) {
-            setActiveStep(2);
-          } else if (checklist.annee_creee) {
-            setActiveStep(1);
-          }
+          // Reprise a la premiere etape dont la checklist n'est pas satisfaite.
+          const visibles = ETAPES.filter((e) => !e.optionnelle);
+          const premiere = visibles.findIndex(
+            (e) => e.checklist && !checklist[e.checklist]
+          );
+          setActiveStep(premiere === -1 ? visibles.length - 1 : premiere);
         }
       } catch {
         // Pas de checklist → demarrer normalement
@@ -90,6 +91,12 @@ export default function SetupWizardPage() {
     };
     detectProgress();
   }, []);
+
+  // Les etapes optionnelles non pertinentes sont retirees du parcours.
+  const etapes = ETAPES.filter(
+    (e) => !e.optionnelle || (e.cle === 'reconduction' && reconductionPossible)
+  );
+  const steps = etapes.map((e) => e.label);
 
   const handleStepAnneeNext = (id) => {
     setAnneeId(id);
@@ -129,20 +136,23 @@ export default function SetupWizardPage() {
   };
 
   const renderStep = () => {
-    switch (activeStep) {
-      case 0:
+    const suivant = { onNext: handleNext, onBack: handleBack };
+    switch (etapes[activeStep]?.cle) {
+      case 'annee':
         return <StepAnnee onNext={handleStepAnneeNext} />;
-      case 1:
-        return <StepStructure onNext={handleNext} onBack={handleBack} />;
-      case 2:
-        return <StepProgrammes onNext={handleNext} onBack={handleBack} />;
-      case 3:
-        return <StepSalles onNext={handleNext} onBack={handleBack} />;
-      case 4:
-        return <StepEnseignants onNext={handleNext} onBack={handleBack} />;
-      case 5:
-        return <StepUEs onNext={handleNext} onBack={handleBack} anneeId={anneeId} />;
-      case 6:
+      case 'reconduction':
+        return <StepReconduction anneeId={anneeId} {...suivant} />;
+      case 'structure':
+        return <StepStructure {...suivant} />;
+      case 'programmes':
+        return <StepProgrammes {...suivant} />;
+      case 'salles':
+        return <StepSalles {...suivant} />;
+      case 'enseignants':
+        return <StepEnseignants {...suivant} />;
+      case 'ues':
+        return <StepUEs {...suivant} anneeId={anneeId} />;
+      case 'chefs':
         return <StepChefs onComplete={handleComplete} onBack={handleBack} />;
       default:
         return null;
@@ -228,13 +238,17 @@ export default function SetupWizardPage() {
             <Step
               key={label}
               completed={
-                CLES_CHECKLIST[index]
-                  ? !!checklist[CLES_CHECKLIST[index]]
+                etapes[index].checklist
+                  ? !!checklist[etapes[index].checklist]
                   : index < activeStep
               }
             >
+              {/* Navigation libre : aucune etape n'est verrouillee, on peut
+                  revenir completer ce qui manque a tout moment. */}
               <StepLabel
+                onClick={() => setActiveStep(index)}
                 sx={{
+                  cursor: 'pointer',
                   '& .MuiStepLabel-label': {
                     fontSize: '0.8rem',
                     fontWeight: index === activeStep ? 700 : 400,
