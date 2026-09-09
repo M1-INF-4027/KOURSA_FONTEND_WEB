@@ -102,8 +102,10 @@ export default function StepEnseignants({ onNext, onBack }) {
           { cle: 'role', exemple: 'ENSEIGNANT' },
           { cle: 'nom_complet', exemple: 'Adamou Hamza' },
         ]}
-        disabled={!departement}
-        raisonBlocage="Choisissez d'abord le departement de rattachement."
+        avertissement={!departement
+          ? 'Vous pourrez previsualiser le fichier, mais le departement de '
+            + "rattachement devra etre choisi avant d'enregistrer."
+          : undefined}
         colonnesApercu={[
           { cle: 'email', libelle: 'Adresse email' },
           { cle: 'role', libelle: 'Role' },

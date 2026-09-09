@@ -188,6 +188,15 @@ export default function StepProgrammes({ onNext, onBack }) {
         Organisez les filieres et niveaux par departement. Vous devez avoir au moins une filiere et un niveau pour continuer.
       </Typography>
 
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2 }}>
+        <Button variant="outlined" startIcon={<Add />} onClick={() => openFilDialog()}>
+          Ajouter une filiere
+        </Button>
+        <Button variant="outlined" startIcon={<Add />} onClick={() => openNivDialog()}>
+          Ajouter un niveau
+        </Button>
+      </Box>
+
       <ImportPanel
         titre="Filieres"
         description="Chaque filiere appartient a un departement, que vous confirmez dans l'apercu."
@@ -213,8 +222,10 @@ export default function StepProgrammes({ onNext, onBack }) {
         colonnesApercu={[{ cle: 'niveau', libelle: 'Niveau' }]}
         parentLibelle="Filiere"
         parentOptions={filieres.map((f) => ({ id: f.id, libelle: f.nom_filiere }))}
-        disabled={filieres.length === 0}
-        raisonBlocage="Creez ou importez d'abord au moins une filiere."
+        avertissement={filieres.length === 0
+          ? "Aucune filiere n'existe encore : l'apercu vous proposera de creer "
+            + 'celles nommees dans le fichier.'
+          : undefined}
         onSimuler={(file) => niveauxService.simuler(file)}
         onValiderLignes={(rows) => niveauxService.importerLignes(rows)}
         onDone={load}

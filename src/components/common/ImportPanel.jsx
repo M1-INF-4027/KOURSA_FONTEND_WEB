@@ -40,7 +40,9 @@ import ImportPreviewDialog from './ImportPreviewDialog';
  *   parentLibelle   - intitule de la colonne de rattachement
  *   parentOptions   - [{ id, libelle }] parents selectionnables
  *   onDone       - appele apres un import reussi (rechargement de la liste)
- *   disabled     - desactive le panneau (prerequis non remplis)
+ *   avertissement - note affichee sans empecher l'import : un prerequis
+ *                  manquant se signale, il ne se verrouille pas.
+ *   disabled     - reserve aux blocages reels (aucun aujourd'hui)
  *   raisonBlocage- message explicatif quand disabled est vrai
  */
 export default function ImportPanel({
@@ -55,6 +57,7 @@ export default function ImportPanel({
   parentOptions = [],
   autoriserCreationParent = true,
   onDone,
+  avertissement,
   disabled = false,
   raisonBlocage,
 }) {
@@ -159,9 +162,9 @@ export default function ImportPanel({
           </Typography>
         )}
 
-        {disabled && raisonBlocage && (
+        {(avertissement || (disabled && raisonBlocage)) && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            {raisonBlocage}
+            {avertissement || raisonBlocage}
           </Alert>
         )}
 

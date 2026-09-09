@@ -402,8 +402,10 @@ function StepReconduction({ anneeId, onNext, onBack }) {
           { cle: 'semestre', exemple: '1' },
           { cle: 'niveau', exemple: 'L3' },
         ]}
-        disabled={!filiereImport}
-        raisonBlocage="Choisissez d'abord la filiere concernee par le fichier."
+        avertissement={!filiereImport
+          ? 'Sans filiere choisie, les niveaux deduits des codes UE ne seront pas '
+            + 'rattaches. Les UEs, elles, seront bien creees.'
+          : undefined}
         onImport={(file) =>
           unitesEnseignementService.import(file, {
             filiere: filiereImport,
@@ -421,8 +423,10 @@ function StepReconduction({ anneeId, onNext, onBack }) {
           { cle: 'enseignant_nom', exemple: 'ATSA' },
           { cle: 'semestre', exemple: '1' },
         ]}
-        disabled={nbUes === 0}
-        raisonBlocage="Reconduisez ou importez d'abord les unites d'enseignement."
+        avertissement={nbUes === 0
+          ? "Aucune UE pour cette annee : l'apercu signalera les lignes sans "
+            + 'correspondance.'
+          : undefined}
         onImport={(file) =>
           unitesEnseignementService.importAffectations(file, {
             filiere: filiereImport,

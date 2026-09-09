@@ -248,8 +248,10 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
           { cle: 'semestre', exemple: '1' },
           { cle: 'niveau', exemple: 'L3' },
         ]}
-        disabled={!filiereImport}
-        raisonBlocage="Choisissez d'abord la filiere concernee par le fichier."
+        avertissement={!filiereImport
+          ? 'Sans filiere choisie, les niveaux deduits des codes UE ne seront pas '
+            + 'rattaches. Les UEs, elles, seront bien creees.'
+          : undefined}
         colonnesApercu={[
           { cle: 'code', libelle: 'Code' },
           { cle: 'libelle', libelle: 'Libelle' },
@@ -284,8 +286,10 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
           { cle: 'semestre', exemple: '1' },
           { cle: 'niveau', exemple: 'L3' },
         ]}
-        disabled={ues.length === 0}
-        raisonBlocage="Importez ou creez d'abord les unites d'enseignement."
+        avertissement={ues.length === 0
+          ? "Aucune UE n'existe encore : l'apercu signalera les lignes sans "
+            + 'correspondance.'
+          : undefined}
         colonnesApercu={[
           { cle: 'code', libelle: 'Code UE' },
           { cle: 'enseignant_email', libelle: 'Email enseignant' },
