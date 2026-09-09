@@ -24,5 +24,11 @@ export default function AuthGuard() {
     return <Navigate to="/pending" replace />;
   }
 
+  // Comptes crees par import : le mot de passe provisoire est l'adresse email,
+  // aucun acces n'est ouvert tant qu'il n'a pas ete change.
+  if (user?.doit_changer_mot_de_passe) {
+    return <Navigate to="/changer-mot-de-passe" replace />;
+  }
+
   return <Outlet />;
 }

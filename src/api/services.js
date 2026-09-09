@@ -106,6 +106,7 @@ export const usersService = {
   register: (data) => api.post('/users/utilisateurs/', data),
   changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
   resetDatabase: (password) => api.post('/users/utilisateurs/reset-database/', { password }),
+  changePassword: (data) => api.post('/users/utilisateurs/change-password/', data),
   importEnseignants: (file) =>
     postFichier('/users/utilisateurs/import-enseignants/', file),
 };

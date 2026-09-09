@@ -9,6 +9,7 @@ import MainLayout from './components/layout/MainLayout';
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 const PendingPage = lazy(() => import('./pages/auth/PendingPage'));
+const ForcePasswordChangePage = lazy(() => import('./pages/auth/ForcePasswordChangePage'));
 const DashboardPage = lazy(() => import('./pages/shared/DashboardPage'));
 const ProfilePage = lazy(() => import('./pages/shared/ProfilePage'));
 const AcademicPage = lazy(() => import('./pages/shared/AcademicPage'));
@@ -68,6 +69,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pending" element={<PendingPage />} />
+          {/* Hors AuthGuard : c'est lui qui redirige ici, l'y inclure bouclerait */}
+          <Route path="/changer-mot-de-passe" element={<ForcePasswordChangePage />} />
 
           {/* Protected */}
           <Route element={<AuthGuard />}>
