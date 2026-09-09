@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Fichier parasite : redirection Windows vers "nul" interpretee comme un fichier
+nul
