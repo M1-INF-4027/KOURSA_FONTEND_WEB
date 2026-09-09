@@ -28,6 +28,7 @@ import {
   ExpandLess,
 } from '@mui/icons-material';
 import toast from 'react-hot-toast';
+import ImportPanel from '../../../components/common/ImportPanel';
 import {
   departementsService,
   filieresService,
@@ -186,6 +187,39 @@ export default function StepProgrammes({ onNext, onBack }) {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Organisez les filieres et niveaux par departement. Vous devez avoir au moins une filiere et un niveau pour continuer.
       </Typography>
+
+      <ImportPanel
+        titre="Filieres"
+        description="Chaque filiere appartient a un departement, que vous confirmez dans l'apercu."
+        colonnes={[
+          { cle: 'filiere', requis: true, exemple: 'Informatique Fondamentale' },
+          { cle: 'departement', exemple: 'Informatique' },
+        ]}
+        colonnesApercu={[{ cle: 'filiere', libelle: 'Filiere' }]}
+        parentLibelle="Departement"
+        parentOptions={departements.map((d) => ({ id: d.id, libelle: d.nom_departement }))}
+        onSimuler={(file) => filieresService.simuler(file)}
+        onValiderLignes={(rows) => filieresService.importerLignes(rows)}
+        onDone={load}
+      />
+
+      <ImportPanel
+        titre="Niveaux"
+        description="Chaque niveau appartient a une filiere. Fonda et Pro etant deux filieres distinctes, leurs niveaux sont separes."
+        colonnes={[
+          { cle: 'niveau', requis: true, exemple: 'L1' },
+          { cle: 'filiere', exemple: 'Informatique Fondamentale' },
+        ]}
+        colonnesApercu={[{ cle: 'niveau', libelle: 'Niveau' }]}
+        parentLibelle="Filiere"
+        parentOptions={filieres.map((f) => ({ id: f.id, libelle: f.nom_filiere }))}
+        disabled={filieres.length === 0}
+        raisonBlocage="Creez ou importez d'abord au moins une filiere."
+        onSimuler={(file) => niveauxService.simuler(file)}
+        onValiderLignes={(rows) => niveauxService.importerLignes(rows)}
+        onDone={load}
+      />
+
 
       {departements.length === 0 && (
         <Card sx={{ mb: 2, bgcolor: '#F5F7FA' }}>

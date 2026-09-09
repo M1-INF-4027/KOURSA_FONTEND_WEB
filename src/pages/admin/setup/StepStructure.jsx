@@ -19,7 +19,7 @@ import {
 import { Add, Edit, Delete, School, AccountBalance } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 import ImportPanel from '../../../components/common/ImportPanel';
-import { facultesService, departementsService, structureService } from '../../../api/services';
+import { facultesService, departementsService } from '../../../api/services';
 
 export default function StepStructure({ onNext, onBack }) {
   const [facultes, setFacultes] = useState([]);
@@ -159,18 +159,27 @@ export default function StepStructure({ onNext, onBack }) {
       </Typography>
 
       <ImportPanel
-        titre="Hierarchie academique"
-        description={
-          'Une ligne par niveau. Faculte, departement et filiere sont crees au ' +
-          'passage s\'ils n\'existent pas : le fichier peut etre rejoue ou complete.'
-        }
+        titre="Facultes"
+        description="Une ligne par faculte."
+        colonnes={[{ cle: 'faculte', requis: true, exemple: 'Faculte des Sciences' }]}
+        colonnesApercu={[{ cle: 'faculte', libelle: 'Faculte' }]}
+        onSimuler={(file) => facultesService.simuler(file)}
+        onValiderLignes={(rows) => facultesService.importerLignes(rows)}
+        onDone={load}
+      />
+
+      <ImportPanel
+        titre="Departements"
+        description="Chaque departement est rattache a une faculte, que vous confirmez dans l'apercu."
         colonnes={[
-          { cle: 'faculte', requis: true, exemple: 'Faculte des Sciences' },
           { cle: 'departement', requis: true, exemple: 'Informatique' },
-          { cle: 'filiere', requis: true, exemple: 'Informatique Fondamentale' },
-          { cle: 'niveau', exemple: 'L1' },
+          { cle: 'faculte', exemple: 'Faculte des Sciences' },
         ]}
-        onImport={(file) => structureService.import(file)}
+        colonnesApercu={[{ cle: 'departement', libelle: 'Departement' }]}
+        parentLibelle="Faculte"
+        parentOptions={facultes.map((f) => ({ id: f.id, libelle: f.nom_faculte }))}
+        onSimuler={(file) => departementsService.simuler(file)}
+        onValiderLignes={(rows) => departementsService.importerLignes(rows)}
         onDone={load}
       />
 

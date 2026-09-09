@@ -19,6 +19,7 @@ import {
 import { FileUpload, FileDownload, CheckCircle, ErrorOutline } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
+import ImportPreviewDialog from './ImportPreviewDialog';
 
 /**
  * Panneau d'import Excel reutilisable.
@@ -31,7 +32,13 @@ import toast from 'react-hot-toast';
  *   titre        - intitule affiche
  *   description  - texte explicatif
  *   colonnes     - [{ cle, requis, exemple }] : colonnes attendues du fichier
- *   onImport     - (file) => Promise<axios response>
+ *   onImport     - (file) => Promise<axios response> : ecriture directe, sans apercu
+ *   onSimuler    - (file) => Promise<axios response> : simulation (dry_run).
+ *                  Sa presence active l'apercu modifiable avant ecriture.
+ *   onValiderLignes - (rows) => Promise : ecriture des lignes arbitrees
+ *   colonnesApercu  - [{ cle, libelle }] colonnes editables dans l'apercu
+ *   parentLibelle   - intitule de la colonne de rattachement
+ *   parentOptions   - [{ id, libelle }] parents selectionnables
  *   onDone       - appele apres un import reussi (rechargement de la liste)
  *   disabled     - desactive le panneau (prerequis non remplis)
  *   raisonBlocage- message explicatif quand disabled est vrai
@@ -41,6 +48,12 @@ export default function ImportPanel({
   description,
   colonnes = [],
   onImport,
+  onSimuler,
+  onValiderLignes,
+  colonnesApercu,
+  parentLibelle,
+  parentOptions = [],
+  autoriserCreationParent = true,
   onDone,
   disabled = false,
   raisonBlocage,
@@ -48,6 +61,7 @@ export default function ImportPanel({
   const [importing, setImporting] = useState(false);
   const [rapport, setRapport] = useState(null);
   const [survol, setSurvol] = useState(false);
+  const [apercu, setApercu] = useState(null);
   const inputRef = useRef(null);
 
   const telechargerModele = () => {
@@ -59,10 +73,51 @@ export default function ImportPanel({
     XLSX.writeFile(wb, `modele_${titre.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.xlsx`);
   };
 
+  const appliquerRapport = (data) => {
+    setRapport(data);
+    const { created = 0, updated = 0, skipped = 0, errors = [] } = data;
+    if (errors.length && !created && !updated) {
+      toast.error(`Aucune ligne importee : ${errors.length} erreur(s)`);
+    } else {
+      toast.success(
+        `Import termine : ${created} creee(s), ${updated} mise(s) a jour, ${skipped} ignoree(s)`
+      );
+      onDone?.();
+    }
+  };
+
+  // Ecriture des lignes arbitrees dans l'apercu.
+  const validerLignes = async (rows) => {
+    try {
+      const res = await onValiderLignes(rows);
+      setApercu(null);
+      appliquerRapport(res.data);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Erreur lors de l'import");
+    }
+  };
+
   const lancerImport = async (file) => {
     if (!file) return;
     setImporting(true);
     setRapport(null);
+
+    // Parcours en deux temps : on montre d'abord ce qui serait ecrit.
+    if (onSimuler) {
+      try {
+        const res = await onSimuler(file);
+        setApercu(res.data);
+      } catch (err) {
+        const detail = err?.response?.data?.detail || "Impossible de lire le fichier";
+        toast.error(detail);
+        setRapport({ created: 0, updated: 0, skipped: 0, errors: [{ ligne: '-', message: detail }] });
+      } finally {
+        setImporting(false);
+        if (inputRef.current) inputRef.current.value = '';
+      }
+      return;
+    }
+
     try {
       const res = await onImport(file);
       setRapport(res.data);
@@ -190,6 +245,17 @@ export default function ImportPanel({
         <Collapse in={!!rapport}>
           {rapport && <RapportImport rapport={rapport} />}
         </Collapse>
+
+        <ImportPreviewDialog
+          ouvert={!!apercu}
+          onFermer={() => setApercu(null)}
+          lignes={apercu}
+          colonnes={colonnesApercu || colonnes.map((c) => ({ cle: c.cle, libelle: c.cle }))}
+          parentLibelle={parentLibelle}
+          parentOptions={parentOptions}
+          autoriserCreationParent={autoriserCreationParent}
+          onValider={validerLignes}
+        />
       </CardContent>
     </Card>
   );

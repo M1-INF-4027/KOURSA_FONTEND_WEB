@@ -31,6 +31,18 @@ function postFichier(url, file, champs = {}) {
   });
 }
 
+
+// Helper: construit les deux temps d'un import pour un endpoint donne.
+//   simuler(file)      -> le serveur decrit ce qu'il ecrirait, sans rien ecrire
+//   importerLignes(rows) -> ecriture des lignes arbitrees dans l'apercu
+function importDeuxTemps(url) {
+  return {
+    simuler: (file, champs = {}) => postFichier(url, file, { ...champs, dry_run: '1' }),
+    import: (file, champs = {}) => postFichier(url, file, champs),
+    importerLignes: (rows, champs = {}) => api.post(url, { rows, ...champs }),
+  };
+}
+
 // ==================== AUTH ====================
 export const authService = {
   login: (credentials) => api.post('/auth/token/', credentials),
@@ -137,6 +149,8 @@ export const structureService = {
 };
 
 export const facultesService = {
+  ...importDeuxTemps('/academic/facultes/import/'),
+
   getAll: () => fetchAll('/academic/facultes/'),
   getById: (id) => api.get(`/academic/facultes/${id}/`),
   create: (data) => api.post('/academic/facultes/', data),
@@ -145,6 +159,8 @@ export const facultesService = {
 };
 
 export const departementsService = {
+  ...importDeuxTemps('/academic/departements/import/'),
+
   getAll: () => fetchAll('/academic/departements/'),
   getById: (id) => api.get(`/academic/departements/${id}/`),
   create: (data) => api.post('/academic/departements/', data),
@@ -153,6 +169,8 @@ export const departementsService = {
 };
 
 export const filieresService = {
+  ...importDeuxTemps('/academic/filieres/import/'),
+
   getAll: () => fetchAll('/academic/filieres/'),
   getById: (id) => api.get(`/academic/filieres/${id}/`),
   create: (data) => api.post('/academic/filieres/', data),
@@ -161,6 +179,8 @@ export const filieresService = {
 };
 
 export const niveauxService = {
+  ...importDeuxTemps('/academic/niveaux/import/'),
+
   getAll: () => fetchAll('/academic/niveaux/'),
   getByDepartement: (deptId) => fetchAll(`/academic/niveaux/?departement=${deptId}`),
   getById: (id) => api.get(`/academic/niveaux/${id}/`),
