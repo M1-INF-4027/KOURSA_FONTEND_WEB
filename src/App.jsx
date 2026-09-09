@@ -5,51 +5,85 @@ import AuthGuard from './components/guards/AuthGuard';
 import RoleGuard from './components/guards/RoleGuard';
 import MainLayout from './components/layout/MainLayout';
 
+/**
+ * Charge une page en differe, en se relevant d'un deploiement survenu entre-temps.
+ *
+ * Les fichiers sont nommes avec une empreinte et l'ancien jeu est supprime a
+ * chaque mise en ligne. Un onglet reste ouvert continue de reclamer les anciens
+ * noms et recoit des 404 : « Failed to fetch dynamically imported module ».
+ * On recharge alors la page une seule fois pour recuperer le nouvel index.
+ */
+const CLE_RECHARGEMENT = 'koursa:rechargement-apres-deploiement';
+
+function pageDifferee(charger) {
+  return lazy(() =>
+    charger()
+      .then((module) => {
+        try { sessionStorage.removeItem(CLE_RECHARGEMENT); } catch { /* stockage indisponible */ }
+        return module;
+      })
+      .catch((erreur) => {
+        let dejaTente = true;
+        try {
+          dejaTente = sessionStorage.getItem(CLE_RECHARGEMENT) === '1';
+          if (!dejaTente) sessionStorage.setItem(CLE_RECHARGEMENT, '1');
+        } catch { /* stockage indisponible : on ne boucle pas */ }
+
+        if (!dejaTente) {
+          window.location.reload();
+          // Suspend le rendu : le rechargement est deja engage.
+          return new Promise(() => {});
+        }
+        throw erreur;
+      })
+  );
+}
+
 // Lazy loaded pages
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
-const PendingPage = lazy(() => import('./pages/auth/PendingPage'));
-const ForcePasswordChangePage = lazy(() => import('./pages/auth/ForcePasswordChangePage'));
-const DashboardPage = lazy(() => import('./pages/shared/DashboardPage'));
-const ProfilePage = lazy(() => import('./pages/shared/ProfilePage'));
-const AcademicPage = lazy(() => import('./pages/shared/AcademicPage'));
-const NotFoundPage = lazy(() => import('./pages/shared/NotFoundPage'));
+const LoginPage = pageDifferee(() => import('./pages/auth/LoginPage'));
+const RegisterPage = pageDifferee(() => import('./pages/auth/RegisterPage'));
+const PendingPage = pageDifferee(() => import('./pages/auth/PendingPage'));
+const ForcePasswordChangePage = pageDifferee(() => import('./pages/auth/ForcePasswordChangePage'));
+const DashboardPage = pageDifferee(() => import('./pages/shared/DashboardPage'));
+const ProfilePage = pageDifferee(() => import('./pages/shared/ProfilePage'));
+const AcademicPage = pageDifferee(() => import('./pages/shared/AcademicPage'));
+const NotFoundPage = pageDifferee(() => import('./pages/shared/NotFoundPage'));
 
 // Enseignant
-const FichesListPage = lazy(() => import('./pages/enseignant/FichesListPage'));
-const FicheDetailPage = lazy(() => import('./pages/enseignant/FicheDetailPage'));
-const MesDeleguesPage = lazy(() => import('./pages/enseignant/MesDeleguesPage'));
-const EnseignantExportPage = lazy(() => import('./pages/enseignant/ExportPage'));
+const FichesListPage = pageDifferee(() => import('./pages/enseignant/FichesListPage'));
+const FicheDetailPage = pageDifferee(() => import('./pages/enseignant/FicheDetailPage'));
+const MesDeleguesPage = pageDifferee(() => import('./pages/enseignant/MesDeleguesPage'));
+const EnseignantExportPage = pageDifferee(() => import('./pages/enseignant/ExportPage'));
 
 // Delegue
-const DeleGueFichesListPage = lazy(() => import('./pages/delegue/FichesListPage'));
-const DelegueCreateFichePage = lazy(() => import('./pages/delegue/CreateFichePage'));
-const DeleGueFicheDetailPage = lazy(() => import('./pages/delegue/FicheDetailPage'));
+const DeleGueFichesListPage = pageDifferee(() => import('./pages/delegue/FichesListPage'));
+const DelegueCreateFichePage = pageDifferee(() => import('./pages/delegue/CreateFichePage'));
+const DeleGueFicheDetailPage = pageDifferee(() => import('./pages/delegue/FicheDetailPage'));
 
 // Chef
-const DeleguesPage = lazy(() => import('./pages/chef/DeleguesPage'));
-const ChefUsersPage = lazy(() => import('./pages/chef/UsersPage'));
-const ChefFichesPage = lazy(() => import('./pages/chef/FichesPage'));
-const ExportPage = lazy(() => import('./pages/chef/ExportPage'));
-const ChefUEsPage = lazy(() => import('./pages/chef/UEsPage'));
-const WeeklyTrackingPage = lazy(() => import('./pages/chef/WeeklyTrackingPage'));
-const WhitelistPage = lazy(() => import('./pages/chef/WhitelistPage'));
-const ChefCreateFichePage = lazy(() => import('./pages/chef/CreateFichePage'));
+const DeleguesPage = pageDifferee(() => import('./pages/chef/DeleguesPage'));
+const ChefUsersPage = pageDifferee(() => import('./pages/chef/UsersPage'));
+const ChefFichesPage = pageDifferee(() => import('./pages/chef/FichesPage'));
+const ExportPage = pageDifferee(() => import('./pages/chef/ExportPage'));
+const ChefUEsPage = pageDifferee(() => import('./pages/chef/UEsPage'));
+const WeeklyTrackingPage = pageDifferee(() => import('./pages/chef/WeeklyTrackingPage'));
+const WhitelistPage = pageDifferee(() => import('./pages/chef/WhitelistPage'));
+const ChefCreateFichePage = pageDifferee(() => import('./pages/chef/CreateFichePage'));
 
 // Admin
-const AdminWhitelistPage = lazy(() => import('./pages/admin/WhitelistPage'));
-const AdminWeeklyTrackingPage = lazy(() => import('./pages/admin/WeeklyTrackingPage'));
-const FacultesPage = lazy(() => import('./pages/admin/FacultesPage'));
-const DepartementsPage = lazy(() => import('./pages/admin/DepartementsPage'));
-const FilieresPage = lazy(() => import('./pages/admin/FilieresPage'));
-const NiveauxPage = lazy(() => import('./pages/admin/NiveauxPage'));
-const SallesPage = lazy(() => import('./pages/admin/SallesPage'));
-const UEsPage = lazy(() => import('./pages/admin/UEsPage'));
-const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
-const AdminFichesPage = lazy(() => import('./pages/admin/FichesPage'));
-const SetupWizardPage = lazy(() => import('./pages/admin/SetupWizardPage'));
-const AnneesPage = lazy(() => import('./pages/admin/AnneesPage'));
-const AdminExportPage = lazy(() => import('./pages/admin/ExportPage'));
+const AdminWhitelistPage = pageDifferee(() => import('./pages/admin/WhitelistPage'));
+const AdminWeeklyTrackingPage = pageDifferee(() => import('./pages/admin/WeeklyTrackingPage'));
+const FacultesPage = pageDifferee(() => import('./pages/admin/FacultesPage'));
+const DepartementsPage = pageDifferee(() => import('./pages/admin/DepartementsPage'));
+const FilieresPage = pageDifferee(() => import('./pages/admin/FilieresPage'));
+const NiveauxPage = pageDifferee(() => import('./pages/admin/NiveauxPage'));
+const SallesPage = pageDifferee(() => import('./pages/admin/SallesPage'));
+const UEsPage = pageDifferee(() => import('./pages/admin/UEsPage'));
+const AdminUsersPage = pageDifferee(() => import('./pages/admin/UsersPage'));
+const AdminFichesPage = pageDifferee(() => import('./pages/admin/FichesPage'));
+const SetupWizardPage = pageDifferee(() => import('./pages/admin/SetupWizardPage'));
+const AnneesPage = pageDifferee(() => import('./pages/admin/AnneesPage'));
+const AdminExportPage = pageDifferee(() => import('./pages/admin/ExportPage'));
 
 function Loading() {
   return (
