@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
+  Typography,
+  Chip,
   Box,
   Card,
   CardContent,
@@ -14,11 +16,14 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import RoleBadge from '../../components/common/RoleBadge';
+import UserDetailDialog from '../../components/common/UserDetailDialog';
 import { usersService } from '../../api/services';
 import toast from 'react-hot-toast';
 
 export default function ChefUsersPage() {
   const [users, setUsers] = useState([]);
+  const [detail, setDetail] = useState(null);
+  const [detailOuvert, setDetailOuvert] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('ALL');
 
@@ -76,6 +81,34 @@ export default function ChefUsersPage() {
       ),
     },
     {
+      field: 'classe',
+      label: 'Classe / Enseignements',
+      sortable: false,
+      render: (row) => {
+        // Un delegue represente une classe ; un enseignant couvre des niveaux.
+        if (row.classe) {
+          return (
+            <Chip
+              size="small"
+              label={row.classe.libelle}
+              sx={{ bgcolor: '#E8ECFB', color: '#001EA6', fontWeight: 600 }}
+            />
+          );
+        }
+        if (row.enseignements?.nombre_ues > 0) {
+          return (
+            <Typography variant="caption" color="text.secondary">
+              {row.enseignements.nombre_ues} UE(s)
+              {row.enseignements.niveaux?.length
+                ? ` — ${row.enseignements.niveaux.join(', ')}`
+                : ''}
+            </Typography>
+          );
+        }
+        return <Typography variant="caption" color="text.secondary">—</Typography>;
+      },
+    },
+    {
       field: 'statut',
       label: 'Statut',
       render: (row) => <StatusBadge status={row.statut} />,
@@ -111,6 +144,15 @@ export default function ChefUsersPage() {
             searchFields={['first_name', 'last_name', 'email']}
             actions={(row) => (
               <>
+                <Tooltip title="Voir le detail">
+                  <IconButton
+                    size="small"
+                    sx={{ color: '#001EA6' }}
+                    onClick={() => { setDetail(row); setDetailOuvert(true); }}
+                  >
+                    <Visibility fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 {row.statut === 'EN_ATTENTE' && (
                   <Tooltip title="Approuver">
                     <IconButton size="small" sx={{ color: '#10B981' }} onClick={() => handleApprove(row.id)}>
@@ -134,6 +176,13 @@ export default function ChefUsersPage() {
           />
         </CardContent>
       </Card>
+
+      <UserDetailDialog
+        ouvert={detailOuvert}
+        onFermer={() => setDetailOuvert(false)}
+        utilisateur={detail}
+        onEnregistre={load}
+      />
     </Box>
   );
 }
