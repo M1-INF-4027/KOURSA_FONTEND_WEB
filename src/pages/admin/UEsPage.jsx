@@ -16,7 +16,7 @@ import {
   Chip,
   Autocomplete,
 } from '@mui/material';
-import { Add, Edit, Delete, DeleteForever } from '@mui/icons-material';
+import { Add, Edit, Delete, FileUpload, DeleteForever } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import ImportPanel from '../../components/common/ImportPanel';
 import DataTable from '../../components/common/DataTable';
@@ -48,6 +48,7 @@ export default function UEsPage() {
 
   // Import CSV/Excel state
   const [importFiliere, setImportFiliere] = useState('');
+  const [importOuvert, setImportOuvert] = useState(false);
   const [deleteAllOpen, setDeleteAllOpen] = useState(false);
 
   const load = async () => {
@@ -253,54 +254,15 @@ export default function UEsPage() {
                 Tout supprimer
               </Button>
             )}
+            <Button variant="outlined" startIcon={<FileUpload />} onClick={() => setImportOuvert(true)}>
+              Importer
+            </Button>
             <Button variant="contained" startIcon={<Add />} onClick={() => handleOpen()}>
               Ajouter
             </Button>
           </Box>
         }
       />
-
-      <ImportPanel
-        titre="Unites d'enseignement"
-        description={
-          'Le fichier est analyse par le serveur, puis presente pour verification ' +
-          'avant tout enregistrement.'
-        }
-        colonnes={[
-          { cle: 'code', requis: true, exemple: 'INF3111' },
-          { cle: 'libelle', requis: true, exemple: 'Compilation' },
-          { cle: 'semestre', exemple: '1' },
-          { cle: 'niveau', exemple: 'L3' },
-        ]}
-        colonnesApercu={[
-          { cle: 'code', libelle: 'Code' },
-          { cle: 'libelle', libelle: 'Libelle' },
-          { cle: 'semestre', libelle: 'Sem.' },
-          { cle: 'niveau', libelle: 'Niveau' },
-        ]}
-        avertissement={!importFiliere
-          ? 'Choisissez la filiere ci-dessous : sans elle, les niveaux deduits des '
-            + 'codes UE ne seront pas rattaches.'
-          : undefined}
-        onSimuler={(file) => unitesEnseignementService.simuler(file, { filiere: importFiliere })}
-        onValiderLignes={(rows) =>
-          unitesEnseignementService.importerLignes(rows, { filiere: importFiliere })
-        }
-        onDone={load}
-      />
-
-      <TextField
-        select
-        size="small"
-        label="Filiere des fichiers importes"
-        value={importFiliere}
-        onChange={(e) => setImportFiliere(e.target.value)}
-        sx={{ minWidth: 300, mb: 2 }}
-      >
-        {filieres.map((f) => (
-          <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
-        ))}
-      </TextField>
 
       <DepartmentSelector value={selectedDept} onChange={setSelectedDept} departments={departments} />
 
@@ -402,6 +364,63 @@ export default function UEsPage() {
           <Button onClick={handleSave} variant="contained" disabled={saving || !form.code_ue.trim() || !form.libelle_ue.trim()}>
             {saving ? 'Sauvegarde...' : (editing ? 'Modifier' : 'Creer')}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+
+      <Dialog
+        open={importOuvert}
+        onClose={() => setImportOuvert(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Importer des unites d&apos;enseignement</DialogTitle>
+        <DialogContent>
+        <TextField
+          select
+          size="small"
+          label="Filiere des fichiers importes"
+          value={importFiliere}
+          onChange={(e) => setImportFiliere(e.target.value)}
+          fullWidth
+          sx={{ mt: 1, mb: 2 }}
+        >
+          {filieres.map((f) => (
+            <MenuItem key={f.id} value={f.id}>{f.nom_filiere}</MenuItem>
+          ))}
+        </TextField>
+
+        <ImportPanel
+          titre="Unites d'enseignement"
+          description={
+            'Le fichier est analyse par le serveur, puis presente pour verification ' +
+            'avant tout enregistrement.'
+          }
+          colonnes={[
+            { cle: 'code', requis: true, exemple: 'INF3111' },
+            { cle: 'libelle', requis: true, exemple: 'Compilation' },
+            { cle: 'semestre', exemple: '1' },
+            { cle: 'niveau', exemple: 'L3' },
+          ]}
+          colonnesApercu={[
+            { cle: 'code', libelle: 'Code' },
+            { cle: 'libelle', libelle: 'Libelle' },
+            { cle: 'semestre', libelle: 'Sem.' },
+            { cle: 'niveau', libelle: 'Niveau' },
+          ]}
+          avertissement={!importFiliere
+            ? 'Choisissez la filiere ci-dessus : sans elle, les niveaux deduits des '
+              + 'codes UE ne seront pas rattaches.'
+            : undefined}
+          onSimuler={(file) => unitesEnseignementService.simuler(file, { filiere: importFiliere })}
+          onValiderLignes={(rows) =>
+            unitesEnseignementService.importerLignes(rows, { filiere: importFiliere })
+          }
+          onDone={load}
+        />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportOuvert(false)} color="inherit">Fermer</Button>
         </DialogActions>
       </Dialog>
 
