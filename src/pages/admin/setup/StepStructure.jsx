@@ -170,6 +170,9 @@ export default function StepStructure({ onNext, onBack }) {
 
       <ImportPanel
         titre="Departements"
+        prerequis={[
+          { libelle: `${facultes.length} faculte(s)`, ok: facultes.length > 0 },
+        ]}
         description="Chaque departement est rattache a une faculte, que vous confirmez dans l'apercu."
         colonnes={[
           { cle: 'departement', requis: true, exemple: 'Informatique' },

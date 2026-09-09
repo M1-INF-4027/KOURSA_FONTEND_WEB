@@ -93,6 +93,9 @@ export default function StepEnseignants({ onNext, onBack }) {
 
       <ImportPanel
         titre="Emails autorises (whitelist)"
+        prerequis={[
+          { libelle: `${departements.length} departement(s)`, ok: departements.length > 0 },
+        ]}
         description={
           'Optionnel. Les emails autorises permettent une activation automatique ' +
           'des comptes crees ulterieurement par les interesses eux-memes.'

@@ -18,7 +18,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Add, Delete, CheckCircle, Warning as WarningIcon, DeleteForever } from '@mui/icons-material';
+import { Add, Delete, CheckCircle, Warning as WarningIcon, DeleteForever, Tune } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
@@ -181,6 +181,19 @@ export default function AnneesPage() {
             searchFields={['libelle']}
             actions={(row) => (
               <>
+                {!row.est_configuree && (
+                  <Tooltip title="Terminer la configuration de cette annee">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate('/setup')}
+                        sx={{ color: '#E65100' }}
+                      >
+                        <Tune fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                )}
                 <Tooltip title="Activer cette annee">
                   <span>
                     <IconButton

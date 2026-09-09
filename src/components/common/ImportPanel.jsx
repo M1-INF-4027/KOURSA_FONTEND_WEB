@@ -16,7 +16,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { FileUpload, FileDownload, CheckCircle, ErrorOutline } from '@mui/icons-material';
+import { FileUpload, FileDownload, CheckCircle, ErrorOutline, RadioButtonUnchecked } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import ImportPreviewDialog from './ImportPreviewDialog';
@@ -40,6 +40,9 @@ import ImportPreviewDialog from './ImportPreviewDialog';
  *   parentLibelle   - intitule de la colonne de rattachement
  *   parentOptions   - [{ id, libelle }] parents selectionnables
  *   onDone       - appele apres un import reussi (rechargement de la liste)
+ *   prerequis    - [{ libelle, ok }] etat reel de ce qui doit exister en base
+ *                  avant cet import. Affiche, jamais bloquant : l'ordre se
+ *                  montre, il ne s'impose pas.
  *   avertissement - note affichee sans empecher l'import : un prerequis
  *                  manquant se signale, il ne se verrouille pas.
  *   disabled     - reserve aux blocages reels (aucun aujourd'hui)
@@ -57,6 +60,7 @@ export default function ImportPanel({
   parentOptions = [],
   autoriserCreationParent = true,
   onDone,
+  prerequis = [],
   avertissement,
   disabled = false,
   raisonBlocage,
@@ -160,6 +164,29 @@ export default function ImportPanel({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             {description}
           </Typography>
+        )}
+
+        {prerequis.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2, p: 1.25,
+              borderRadius: 2, bgcolor: '#FAFBFE', border: '1px solid #EDF0F7',
+            }}
+          >
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#525252', alignSelf: 'center' }}>
+              A avoir en base :
+            </Typography>
+            {prerequis.map((p) => (
+              <Box key={p.libelle} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {p.ok
+                  ? <CheckCircle sx={{ fontSize: 16, color: '#2E7D32' }} />
+                  : <RadioButtonUnchecked sx={{ fontSize: 16, color: '#B26A00' }} />}
+                <Typography variant="caption" sx={{ color: p.ok ? '#2E7D32' : '#B26A00' }}>
+                  {p.libelle}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         )}
 
         {(avertissement || (disabled && raisonBlocage)) && (

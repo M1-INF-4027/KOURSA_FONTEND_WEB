@@ -238,6 +238,10 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
 
       <ImportPanel
         titre="Unites d'enseignement"
+        prerequis={[
+          { libelle: `${filieres.length} filiere(s)`, ok: filieres.length > 0 },
+          { libelle: `${semestres.length} semestre(s)`, ok: semestres.length > 0 },
+        ]}
         description={
           "Le niveau est deduit du code de l'UE (INF3xxx devient L3) ou lu dans la " +
           'colonne niveau si elle est presente.'
@@ -275,6 +279,10 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
 
       <ImportPanel
         titre="Affectations enseignant / UE"
+        prerequis={[
+          { libelle: `${ues.length} UE(s)`, ok: ues.length > 0 },
+          { libelle: `${enseignants.length} compte(s) enseignant`, ok: enseignants.length > 0 },
+        ]}
         description={
           "A importer apres les UEs. L'enseignant est retrouve par son email, " +
           'a defaut par son nom. Les comptes doivent avoir ete crees a l\'etape precedente.'

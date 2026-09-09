@@ -402,6 +402,9 @@ function StepReconduction({ anneeId, onNext, onBack }) {
 
       <ImportPanel
         titre="Unites d'enseignement"
+        prerequis={[
+          { libelle: `${filieres.length} filiere(s)`, ok: filieres.length > 0 },
+        ]}
         description="Les UEs sont rattachees aux semestres de la nouvelle annee."
         colonnes={[
           { cle: 'code', requis: true, exemple: 'INF3111' },
@@ -436,6 +439,10 @@ function StepReconduction({ anneeId, onNext, onBack }) {
 
       <ImportPanel
         titre="Affectations enseignant / UE"
+        prerequis={[
+          { libelle: `${nbUes} UE(s) pour cette annee`, ok: nbUes > 0 },
+          { libelle: `${enseignants.length} compte(s) enseignant`, ok: enseignants.length > 0 },
+        ]}
         colonnes={[
           { cle: 'code_ue', requis: true, exemple: 'INF3111' },
           { cle: 'enseignant_email', exemple: 'enseignant@exemple.cm' },
@@ -488,6 +495,7 @@ function StepReconduction({ anneeId, onNext, onBack }) {
 // Step 3 -- Chefs de departement
 // ---------------------------------------------------------------------------
 function StepChefsDepartement({ onComplete, onBack }) {
+  const navigate = useNavigate();
   const [departements, setDepartements] = useState([]);
   const [enseignants, setEnseignants] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -606,8 +614,18 @@ function StepChefsDepartement({ onComplete, onBack }) {
       />
 
       {departements.length === 0 && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Aucun departement trouve.
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => navigate('/setup')}>
+              Configurer
+            </Button>
+          }
+        >
+          Aucun departement n&apos;existe encore : cette etape ne peut rien assigner.
+          Passez par la configuration complete pour creer ou importer la structure
+          academique, puis revenez ici.
         </Alert>
       )}
 
@@ -763,7 +781,13 @@ export default function NewYearWizardPage() {
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const detail = err.response?.data;
-      if (detail && typeof detail === 'object') {
+      if (detail?.etapes_manquantes?.length) {
+        // Le serveur refuse une annee incomplete : on nomme ce qui manque.
+        toast.error(
+          'Configuration incomplete : ' + detail.etapes_manquantes.join(', '),
+          { duration: 8000 }
+        );
+      } else if (detail && typeof detail === 'object') {
         const messages = Object.values(detail).flat().join(', ');
         toast.error(messages || "Erreur lors de l'activation");
       } else {

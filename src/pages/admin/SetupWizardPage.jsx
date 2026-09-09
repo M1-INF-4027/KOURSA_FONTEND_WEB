@@ -23,6 +23,19 @@ import StepChefs from './setup/StepChefs';
 
 // L'ordre suit les dependances : les comptes enseignants doivent exister avant
 // l'import des UEs, sans quoi les affectations ne peuvent pas etre resolues.
+// Chaque etape est adossee a la cle de checklist qui atteste, cote serveur, que
+// les donnees existent vraiment. Le fil d'etapes reflete ainsi la base, et non la
+// simple progression de l'utilisateur.
+const CLES_CHECKLIST = [
+  'annee_creee',
+  'departements_crees',
+  'niveaux_crees',
+  'salles_creees',
+  'enseignants_crees',
+  'ues_creees',
+  null, // Chefs : aucune cle dediee, l'etape se termine a la validation finale
+];
+
 const steps = [
   'Annee academique',
   'Structure academique',
@@ -37,6 +50,7 @@ export default function SetupWizardPage() {
   const navigate = useNavigate();
   const { refresh } = useConfig();
   const [activeStep, setActiveStep] = useState(0);
+  const [checklist, setChecklist] = useState({});
   const [anneeId, setAnneeId] = useState(null);
   const [finishing, setFinishing] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -47,6 +61,7 @@ export default function SetupWizardPage() {
       try {
         const res = await configurationService.getChecklist();
         const { annee, checklist, est_configuree } = res.data;
+        setChecklist(checklist || {});
 
         if (annee && !est_configuree) {
           setAnneeId(annee.id);
@@ -210,7 +225,14 @@ export default function SetupWizardPage() {
       <Box sx={{ width: '100%', maxWidth: 800, mb: 3 }}>
         <Stepper activeStep={activeStep} alternativeLabel>
           {steps.map((label, index) => (
-            <Step key={label} completed={index < activeStep}>
+            <Step
+              key={label}
+              completed={
+                CLES_CHECKLIST[index]
+                  ? !!checklist[CLES_CHECKLIST[index]]
+                  : index < activeStep
+              }
+            >
               <StepLabel
                 sx={{
                   '& .MuiStepLabel-label': {

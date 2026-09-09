@@ -199,6 +199,9 @@ export default function StepProgrammes({ onNext, onBack }) {
 
       <ImportPanel
         titre="Filieres"
+        prerequis={[
+          { libelle: `${departements.length} departement(s)`, ok: departements.length > 0 },
+        ]}
         description="Chaque filiere appartient a un departement, que vous confirmez dans l'apercu."
         colonnes={[
           { cle: 'filiere', requis: true, exemple: 'Informatique Fondamentale' },
@@ -214,6 +217,9 @@ export default function StepProgrammes({ onNext, onBack }) {
 
       <ImportPanel
         titre="Niveaux"
+        prerequis={[
+          { libelle: `${filieres.length} filiere(s)`, ok: filieres.length > 0 },
+        ]}
         description="Chaque niveau appartient a une filiere. Fonda et Pro etant deux filieres distinctes, leurs niveaux sont separes."
         colonnes={[
           { cle: 'niveau', requis: true, exemple: 'L1' },
