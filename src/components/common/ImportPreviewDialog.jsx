@@ -273,8 +273,10 @@ export default function ImportPreviewDialog({
 
       <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
         <Typography variant="body2" color="text.secondary">
-          {aCreer.length} a enregistrer
-          {bloquantes.length > 0 && ` — ${bloquantes.length} en attente de rattachement`}
+          {envoi
+            ? 'Enregistrement en cours, cela peut prendre une minute...'
+            : `${aCreer.length} a enregistrer`}
+          {!envoi && bloquantes.length > 0 && ` — ${bloquantes.length} en attente de rattachement`}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button onClick={onFermer} color="inherit" disabled={envoi}>

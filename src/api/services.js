@@ -16,6 +16,13 @@ async function fetchAll(url, params) {
   return unwrap(res);
 }
 
+// Les imports sont longs par nature : creer 47 comptes enseignants demande une
+// minute, le hachage PBKDF2 d'un mot de passe coutant a lui seul ~1,3 s. Le
+// delai global de 15 s du client les interrompait en cours de route, laissant
+// l'import a moitie fait — d'ou un echec au premier essai, suivi d'un succes au
+// second, les comptes deja crees n'etant plus a hacher.
+const DELAI_IMPORT_MS = 300000;
+
 // Helper: poste un fichier Excel vers un endpoint d'import.
 // `champs` ajoute les parametres attendus par certains imports (filiere, departement...).
 function postFichier(url, file, champs = {}) {
@@ -28,7 +35,13 @@ function postFichier(url, file, champs = {}) {
   });
   return api.post(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: DELAI_IMPORT_MS,
   });
+}
+
+// Helper: envoie les lignes arbitrees dans l'apercu, avec le meme delai etendu.
+function postLignes(url, corps) {
+  return api.post(url, corps, { timeout: DELAI_IMPORT_MS });
 }
 
 
@@ -39,7 +52,7 @@ function importDeuxTemps(url) {
   return {
     simuler: (file, champs = {}) => postFichier(url, file, { ...champs, dry_run: '1' }),
     import: (file, champs = {}) => postFichier(url, file, champs),
-    importerLignes: (rows, champs = {}) => api.post(url, { rows, ...champs }),
+    importerLignes: (rows, champs = {}) => postLignes(url, { rows, ...champs }),
   };
 }
 
@@ -124,7 +137,7 @@ export const usersService = {
   importEnseignants: (file) =>
     postFichier('/users/utilisateurs/import-enseignants/', file),
   importerEnseignantsLignes: (rows) =>
-    api.post('/users/utilisateurs/import-enseignants/', { rows }),
+    postLignes('/users/utilisateurs/import-enseignants/', { rows }),
 };
 
 export const rolesService = {
@@ -151,7 +164,7 @@ export const whitelistService = {
       dry_run: '1',
     }),
   importerLignes: (rows, departement, roleDefaut) =>
-    api.post('/users/whitelist/import/', {
+    postLignes('/users/whitelist/import/', {
       rows,
       departement,
       role_defaut: roleDefaut,
@@ -214,7 +227,7 @@ export const sallesService = {
   deleteAll: () => api.delete('/academic/salles/delete-all/'),
   simuler: (file) => postFichier('/academic/salles/import/', file, { dry_run: '1' }),
   import: (file) => postFichier('/academic/salles/import/', file),
-  importerLignes: (rows) => api.post('/academic/salles/import/', { rows }),
+  importerLignes: (rows) => postLignes('/academic/salles/import/', { rows }),
 };
 
 // ==================== TEACHING ====================
@@ -242,7 +255,7 @@ export const unitesEnseignementService = {
       dry_run: '1',
     }),
   importerLignes: (rows, { filiere, anneeAcademique } = {}) =>
-    api.post('/teaching/unites-enseignement/import/', {
+    postLignes('/teaching/unites-enseignement/import/', {
       rows, filiere, annee_academique: anneeAcademique,
     }),
   importAffectations: (file, { filiere, anneeAcademique } = {}) =>
@@ -257,7 +270,7 @@ export const unitesEnseignementService = {
       dry_run: '1',
     }),
   importerAffectationsLignes: (rows, { filiere, anneeAcademique } = {}) =>
-    api.post('/teaching/unites-enseignement/import-affectations/', {
+    postLignes('/teaching/unites-enseignement/import-affectations/', {
       rows, filiere, annee_academique: anneeAcademique,
     }),
   getMesDelegues: () => api.get('/teaching/unites-enseignement/mes-delegues/'),
