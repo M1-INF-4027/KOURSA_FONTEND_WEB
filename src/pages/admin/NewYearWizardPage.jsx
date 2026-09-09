@@ -259,13 +259,20 @@ function StepReconduction({ anneeId, onNext, onBack }) {
   const [filieres, setFilieres] = useState([]);
   const [filiereImport, setFiliereImport] = useState('');
   const [nbUes, setNbUes] = useState(0);
+  const [enseignants, setEnseignants] = useState([]);
 
   const chargerContexte = async () => {
     try {
-      const [filRes, ueRes] = await Promise.all([
+      const [filRes, ueRes, usrRes] = await Promise.all([
         filieresService.getAll(),
         unitesEnseignementService.getByAnnee(anneeId),
+        usersService.getAll(),
       ]);
+      setEnseignants(
+        usrRes.data.filter((u) =>
+          (u.roles || []).some((r) => (typeof r === 'object' ? r.nom_role : r) === 'Enseignant')
+        )
+      );
       setFilieres(filRes.data);
       setFiliereImport((prev) => prev || (filRes.data.length === 1 ? filRes.data[0].id : ''));
       setNbUes(ueRes.data.length);
@@ -406,8 +413,20 @@ function StepReconduction({ anneeId, onNext, onBack }) {
           ? 'Sans filiere choisie, les niveaux deduits des codes UE ne seront pas '
             + 'rattaches. Les UEs, elles, seront bien creees.'
           : undefined}
-        onImport={(file) =>
-          unitesEnseignementService.import(file, {
+        colonnesApercu={[
+          { cle: 'code', libelle: 'Code' },
+          { cle: 'libelle', libelle: 'Libelle' },
+          { cle: 'semestre', libelle: 'Sem.' },
+          { cle: 'niveau', libelle: 'Niveau' },
+        ]}
+        onSimuler={(file) =>
+          unitesEnseignementService.simuler(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onValiderLignes={(rows) =>
+          unitesEnseignementService.importerLignes(rows, {
             filiere: filiereImport,
             anneeAcademique: anneeId,
           })
@@ -427,8 +446,21 @@ function StepReconduction({ anneeId, onNext, onBack }) {
           ? "Aucune UE pour cette annee : l'apercu signalera les lignes sans "
             + 'correspondance.'
           : undefined}
-        onImport={(file) =>
-          unitesEnseignementService.importAffectations(file, {
+        colonnesApercu={[
+          { cle: 'code', libelle: 'Code UE' },
+          { cle: 'enseignant_email', libelle: 'Email enseignant' },
+        ]}
+        parentLibelle="Enseignant"
+        parentOptions={enseignants.map((e) => ({ id: e.id, libelle: e.email }))}
+        autoriserCreationParent={false}
+        onSimuler={(file) =>
+          unitesEnseignementService.simulerAffectations(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onValiderLignes={(rows) =>
+          unitesEnseignementService.importerAffectationsLignes(rows, {
             filiere: filiereImport,
             anneeAcademique: anneeId,
           })
