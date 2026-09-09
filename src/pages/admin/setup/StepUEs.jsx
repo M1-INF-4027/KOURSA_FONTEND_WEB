@@ -250,8 +250,20 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
         ]}
         disabled={!filiereImport}
         raisonBlocage="Choisissez d'abord la filiere concernee par le fichier."
-        onImport={(file) =>
-          unitesEnseignementService.import(file, {
+        colonnesApercu={[
+          { cle: 'code', libelle: 'Code' },
+          { cle: 'libelle', libelle: 'Libelle' },
+          { cle: 'semestre', libelle: 'Sem.' },
+          { cle: 'niveau', libelle: 'Niveau' },
+        ]}
+        onSimuler={(file) =>
+          unitesEnseignementService.simuler(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onValiderLignes={(rows) =>
+          unitesEnseignementService.importerLignes(rows, {
             filiere: filiereImport,
             anneeAcademique: anneeId,
           })
@@ -274,8 +286,21 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
         ]}
         disabled={ues.length === 0}
         raisonBlocage="Importez ou creez d'abord les unites d'enseignement."
-        onImport={(file) =>
-          unitesEnseignementService.importAffectations(file, {
+        colonnesApercu={[
+          { cle: 'code', libelle: 'Code UE' },
+          { cle: 'enseignant_email', libelle: 'Email enseignant' },
+        ]}
+        parentLibelle="Enseignant"
+        parentOptions={enseignants.map((e) => ({ id: e.id, libelle: e.email }))}
+        autoriserCreationParent={false}
+        onSimuler={(file) =>
+          unitesEnseignementService.simulerAffectations(file, {
+            filiere: filiereImport,
+            anneeAcademique: anneeId,
+          })
+        }
+        onValiderLignes={(rows) =>
+          unitesEnseignementService.importerAffectationsLignes(rows, {
             filiere: filiereImport,
             anneeAcademique: anneeId,
           })

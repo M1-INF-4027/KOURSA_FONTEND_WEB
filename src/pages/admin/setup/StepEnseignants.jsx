@@ -82,7 +82,12 @@ export default function StepEnseignants({ onNext, onBack }) {
           { cle: 'email', requis: true, exemple: 'enseignant@exemple.cm' },
           { cle: 'nom_complet', exemple: 'Adamou Hamza' },
         ]}
-        onImport={(file) => usersService.importEnseignants(file)}
+        colonnesApercu={[
+          { cle: 'email', libelle: 'Adresse email' },
+          { cle: 'nom_complet', libelle: 'Nom complet' },
+        ]}
+        onSimuler={(file) => usersService.simulerEnseignants(file)}
+        onValiderLignes={(rows) => usersService.importerEnseignantsLignes(rows)}
         onDone={load}
       />
 
@@ -99,7 +104,12 @@ export default function StepEnseignants({ onNext, onBack }) {
         ]}
         disabled={!departement}
         raisonBlocage="Choisissez d'abord le departement de rattachement."
-        onImport={(file) => whitelistService.import(file, departement)}
+        colonnesApercu={[
+          { cle: 'email', libelle: 'Adresse email' },
+          { cle: 'role', libelle: 'Role' },
+        ]}
+        onSimuler={(file) => whitelistService.simuler(file, departement)}
+        onValiderLignes={(rows) => whitelistService.importerLignes(rows, departement)}
         onDone={load}
       />
 

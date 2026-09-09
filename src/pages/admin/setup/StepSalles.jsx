@@ -102,7 +102,9 @@ export default function StepSalles({ onNext, onBack }) {
         titre="Salles"
         description="Une salle deja enregistree est ignoree : le fichier peut etre rejoue sans risque."
         colonnes={[{ cle: 'nom_salle', requis: true, exemple: 'A100' }]}
-        onImport={(file) => sallesService.import(file)}
+        colonnesApercu={[{ cle: 'nom_salle', libelle: 'Salle' }]}
+        onSimuler={(file) => sallesService.simuler(file)}
+        onValiderLignes={(rows) => sallesService.importerLignes(rows)}
         onDone={load}
       />
 

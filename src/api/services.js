@@ -119,8 +119,12 @@ export const usersService = {
   changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
   resetDatabase: (password) => api.post('/users/utilisateurs/reset-database/', { password }),
   changePassword: (data) => api.post('/users/utilisateurs/change-password/', data),
+  simulerEnseignants: (file) =>
+    postFichier('/users/utilisateurs/import-enseignants/', file, { dry_run: '1' }),
   importEnseignants: (file) =>
     postFichier('/users/utilisateurs/import-enseignants/', file),
+  importerEnseignantsLignes: (rows) =>
+    api.post('/users/utilisateurs/import-enseignants/', { rows }),
 };
 
 export const rolesService = {
@@ -137,6 +141,18 @@ export const whitelistService = {
   deleteAll: (params) => api.delete('/users/whitelist/delete-all/', { params }),
   import: (file, departement, roleDefaut) =>
     postFichier('/users/whitelist/import/', file, {
+      departement,
+      role_defaut: roleDefaut,
+    }),
+  simuler: (file, departement, roleDefaut) =>
+    postFichier('/users/whitelist/import/', file, {
+      departement,
+      role_defaut: roleDefaut,
+      dry_run: '1',
+    }),
+  importerLignes: (rows, departement, roleDefaut) =>
+    api.post('/users/whitelist/import/', {
+      rows,
       departement,
       role_defaut: roleDefaut,
     }),
@@ -196,7 +212,9 @@ export const sallesService = {
   update: (id, data) => api.patch(`/academic/salles/${id}/`, data),
   delete: (id) => api.delete(`/academic/salles/${id}/`),
   deleteAll: () => api.delete('/academic/salles/delete-all/'),
+  simuler: (file) => postFichier('/academic/salles/import/', file, { dry_run: '1' }),
   import: (file) => postFichier('/academic/salles/import/', file),
+  importerLignes: (rows) => api.post('/academic/salles/import/', { rows }),
 };
 
 // ==================== TEACHING ====================
@@ -216,10 +234,31 @@ export const unitesEnseignementService = {
       niveaux,
       annee_academique: anneeAcademique,
     }),
+  simuler: (file, { filiere, semestre, anneeAcademique } = {}) =>
+    postFichier('/teaching/unites-enseignement/import/', file, {
+      filiere,
+      semestre,
+      annee_academique: anneeAcademique,
+      dry_run: '1',
+    }),
+  importerLignes: (rows, { filiere, anneeAcademique } = {}) =>
+    api.post('/teaching/unites-enseignement/import/', {
+      rows, filiere, annee_academique: anneeAcademique,
+    }),
   importAffectations: (file, { filiere, anneeAcademique } = {}) =>
     postFichier('/teaching/unites-enseignement/import-affectations/', file, {
       filiere,
       annee_academique: anneeAcademique,
+    }),
+  simulerAffectations: (file, { filiere, anneeAcademique } = {}) =>
+    postFichier('/teaching/unites-enseignement/import-affectations/', file, {
+      filiere,
+      annee_academique: anneeAcademique,
+      dry_run: '1',
+    }),
+  importerAffectationsLignes: (rows, { filiere, anneeAcademique } = {}) =>
+    api.post('/teaching/unites-enseignement/import-affectations/', {
+      rows, filiere, annee_academique: anneeAcademique,
     }),
   getMesDelegues: () => api.get('/teaching/unites-enseignement/mes-delegues/'),
 };
