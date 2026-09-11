@@ -27,6 +27,7 @@ import {
 import {
   CheckCircleRounded,
   ComputerRounded,
+  DownloadRounded,
   PhoneAndroidRounded,
   ScheduleRounded,
 } from '@mui/icons-material';
@@ -128,6 +129,19 @@ const INSCRIPTIONS = [
       + 'plateforme aux enseignants du département.',
   },
 ];
+
+/**
+ * Adresse d'assistance, annoncee au pied de la page et la ou l'inscription
+ * peut se bloquer : adresse non declaree, compte encore en attente.
+ */
+const ASSISTANCE = 'koursa@gmail.com';
+
+// Le depot de l'application mobile est prive : les fichiers attaches a une
+// release privee exigent une authentification. La version installable est donc
+// publiee sur le depot public du site, dont l'adresse ne change pas d'une
+// version a l'autre.
+const TELECHARGEMENT_ANDROID =
+  'https://github.com/M1-INF-4027/KOURSA_FONTEND_WEB/releases/latest/download/koursa.apk';
 
 /** Ecart vertical des sections, sur la trame de 8 dp de Material. */
 const RESPIRATION = { xs: 7, md: 11 };
@@ -533,6 +547,36 @@ export default function LandingPage({ sansRedirection = false }) {
               ))}
             </Grid>
 
+            <Card sx={{ mt: { xs: 4, md: 5 }, bgcolor: 'background.paper' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={2.5}
+                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  justifyContent="space-between"
+                >
+                  <Box>
+                    <Typography variant="h3" sx={{ fontSize: '1.1875rem', mb: 0.5 }}>
+                      Installer l&apos;application Android
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 520 }}>
+                      Fichier d&apos;installation de 15 Mo, version 1.0. Android
+                      demandera d&apos;autoriser l&apos;installation depuis cette
+                      source avant de poursuivre.
+                    </Typography>
+                  </Box>
+                  <Button
+                    href={TELECHARGEMENT_ANDROID}
+                    variant="contained"
+                    startIcon={<DownloadRounded />}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    Télécharger
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+
             <Box sx={{ mt: { xs: 4, md: 5 }, maxWidth: 720 }}>
               <Typography variant="h3" sx={{ fontSize: '1.1875rem', mb: 1 }}>
                 Les mêmes identifiants des deux côtés
@@ -543,6 +587,15 @@ export default function LandingPage({ sansRedirection = false }) {
                 Android sans rien recommencer, et y reçoit une notification dès
                 qu&apos;une fiche le concerne. Sur le web, la connexion se fait par
                 mot de passe ou par compte Google.
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }}>
+                Inscription refusée, compte encore en attente, mot de passe perdu :
+                écrivez à{' '}
+                <Link href={`mailto:${ASSISTANCE}`} sx={{ fontWeight: 600 }}>
+                  {ASSISTANCE}
+                </Link>
+                , en indiquant votre nom et la classe ou les unités
+                d&apos;enseignement concernées.
               </Typography>
             </Box>
           </Container>
@@ -565,16 +618,24 @@ export default function LandingPage({ sansRedirection = false }) {
                 </Typography>
                 <Typography variant="body2">Université de Yaoundé I</Typography>
               </Box>
-              <Typography variant="body2">
-                {connecte ? 'Votre session est ouverte. ' : 'Vous avez déjà un compte ? '}
-                <Link
-                  component={RouterLink}
-                  to={connecte ? '/dashboard' : '/login'}
-                  sx={{ color: 'common.white' }}
-                >
-                  {connecte ? 'Revenir à mon espace' : 'Se connecter'}
-                </Link>
-              </Typography>
+              <Stack spacing={0.75} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
+                <Typography variant="body2">
+                  Une difficulté, une question ?{' '}
+                  <Link href={`mailto:${ASSISTANCE}`} sx={{ color: 'common.white' }}>
+                    {ASSISTANCE}
+                  </Link>
+                </Typography>
+                <Typography variant="body2">
+                  {connecte ? 'Votre session est ouverte. ' : 'Vous avez déjà un compte ? '}
+                  <Link
+                    component={RouterLink}
+                    to={connecte ? '/dashboard' : '/login'}
+                    sx={{ color: 'common.white' }}
+                  >
+                    {connecte ? 'Revenir à mon espace' : 'Se connecter'}
+                  </Link>
+                </Typography>
+              </Stack>
             </Stack>
           </Container>
         </Box>
