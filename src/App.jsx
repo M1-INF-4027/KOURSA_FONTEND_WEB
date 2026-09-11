@@ -40,6 +40,7 @@ function pageDifferee(charger) {
 }
 
 // Lazy loaded pages
+const LandingPage = pageDifferee(() => import('./pages/public/LandingPage'));
 const LoginPage = pageDifferee(() => import('./pages/auth/LoginPage'));
 const RegisterPage = pageDifferee(() => import('./pages/auth/RegisterPage'));
 const PendingPage = pageDifferee(() => import('./pages/auth/PendingPage'));
@@ -99,6 +100,9 @@ export default function App() {
       <Suspense fallback={<Loading />}>
         <Routes>
           {/* Public */}
+          {/* La racine presente la plateforme ; elle renvoie au tableau de bord
+              des lors qu'une session est ouverte. */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pending" element={<PendingPage />} />
@@ -111,9 +115,6 @@ export default function App() {
             <Route path="/setup" element={<SetupWizardPage />} />
 
             <Route element={<MainLayout />}>
-              {/* Redirect root to dashboard */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
               {/* Shared */}
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
