@@ -444,7 +444,7 @@ export default function LandingPage({ sansRedirection = false }) {
                       Heures validées
                     </Typography>
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                      Master 2 Informatique, semestre 1
+                      Licence 3 Informatique, semestre 1
                     </Typography>
                     <Table size="small" sx={{ '& td, & th': { fontVariantNumeric: 'tabular-nums' } }}>
                       <TableHead>
