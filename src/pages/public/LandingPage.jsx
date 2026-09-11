@@ -229,12 +229,15 @@ function FicheSuivi() {
   );
 }
 
-export default function LandingPage() {
+export default function LandingPage({ sansRedirection = false }) {
   const { isAuth, isLoading } = useAuth();
+  const connecte = !isLoading && isAuth;
 
-  // Un membre deja connecte n'a que faire de la presentation : la racine
-  // reste son raccourci vers le tableau de bord.
-  if (!isLoading && isAuth) return <Navigate to="/dashboard" replace />;
+  // Sur la racine, un membre connecte va droit a son tableau de bord : c'est
+  // son raccourci quotidien, il n'a pas a cliquer deux fois. La presentation
+  // reste consultable a /accueil, session ouverte ou non — sans quoi personne
+  // du departement ne pourrait plus la relire ni la montrer.
+  if (!sansRedirection && connecte) return <Navigate to="/dashboard" replace />;
 
   return (
     <ThemeProvider theme={landingTheme}>
@@ -255,16 +258,22 @@ export default function LandingPage() {
                 <Box component="img" src="/logo.png" alt="" sx={{ width: 32, height: 32 }} />
                 <Typography variant="h6" sx={{ fontSize: '1.25rem' }}>Koursa</Typography>
               </Stack>
+              {!connecte && (
+                <Button
+                  component={RouterLink}
+                  to="/register"
+                  variant="text"
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  Créer un compte
+                </Button>
+              )}
               <Button
                 component={RouterLink}
-                to="/register"
-                variant="text"
-                sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                to={connecte ? '/dashboard' : '/login'}
+                variant="contained"
               >
-                Créer un compte
-              </Button>
-              <Button component={RouterLink} to="/login" variant="contained">
-                Se connecter
+                {connecte ? 'Mon espace' : 'Se connecter'}
               </Button>
             </Toolbar>
           </Container>
@@ -294,7 +303,7 @@ export default function LandingPage() {
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }}>
                   <Button
                     component={RouterLink}
-                    to="/login"
+                    to={connecte ? '/dashboard' : '/login'}
                     variant="contained"
                     sx={{
                       bgcolor: 'common.white',
@@ -302,20 +311,22 @@ export default function LandingPage() {
                       '&:hover': { bgcolor: 'rgba(255,255,255,.9)' },
                     }}
                   >
-                    Se connecter
+                    {connecte ? 'Accéder à mon espace' : 'Se connecter'}
                   </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/register"
-                    variant="outlined"
-                    sx={{
-                      color: 'common.white',
-                      borderColor: 'rgba(255,255,255,.5)',
-                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,.08)' },
-                    }}
-                  >
-                    Créer un compte
-                  </Button>
+                  {!connecte && (
+                    <Button
+                      component={RouterLink}
+                      to="/register"
+                      variant="outlined"
+                      sx={{
+                        color: 'common.white',
+                        borderColor: 'rgba(255,255,255,.5)',
+                        '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,.08)' },
+                      }}
+                    >
+                      Créer un compte
+                    </Button>
+                  )}
                 </Stack>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.82)', maxWidth: 520 }}>
                   L&apos;accès est réservé aux membres du département. Les enseignants
@@ -528,9 +539,13 @@ export default function LandingPage() {
                 <Typography variant="body2">Université de Yaoundé I</Typography>
               </Box>
               <Typography variant="body2">
-                Vous avez déjà un compte ?{' '}
-                <Link component={RouterLink} to="/login" sx={{ color: 'common.white' }}>
-                  Se connecter
+                {connecte ? 'Votre session est ouverte. ' : 'Vous avez déjà un compte ? '}
+                <Link
+                  component={RouterLink}
+                  to={connecte ? '/dashboard' : '/login'}
+                  sx={{ color: 'common.white' }}
+                >
+                  {connecte ? 'Revenir à mon espace' : 'Se connecter'}
                 </Link>
               </Typography>
             </Stack>

@@ -103,6 +103,9 @@ export default function App() {
           {/* La racine presente la plateforme ; elle renvoie au tableau de bord
               des lors qu'une session est ouverte. */}
           <Route path="/" element={<LandingPage />} />
+          {/* Meme page, consultable session ouverte : sans cette adresse,
+              aucun membre connecte ne pourrait plus la relire ni la montrer. */}
+          <Route path="/accueil" element={<LandingPage sansRedirection />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/pending" element={<PendingPage />} />
