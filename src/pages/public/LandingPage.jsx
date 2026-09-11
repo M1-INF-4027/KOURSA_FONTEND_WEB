@@ -110,6 +110,25 @@ const RELEVE = [
   ['INF3122', '6', '12 h 00'],
 ];
 
+const INSCRIPTIONS = [
+  {
+    profil: 'Délégué',
+    support: 'Application Android',
+    icone: <PhoneAndroidRounded fontSize="small" />,
+    texte: "Le délégué crée son compte depuis le téléphone et désigne la classe "
+      + "qu'il représente — filière et niveau. Le chef de département approuve "
+      + 'la demande avant sa première fiche.',
+  },
+  {
+    profil: 'Enseignant',
+    support: 'Site web',
+    icone: <ComputerRounded fontSize="small" />,
+    texte: "L'enseignant s'inscrit sur le site, avec l'adresse que le département "
+      + 'a déclarée. Une adresse inconnue est refusée : c\'est ce qui réserve la '
+      + 'plateforme aux enseignants du département.',
+  },
+];
+
 /** Ecart vertical des sections, sur la trame de 8 dp de Material. */
 const RESPIRATION = { xs: 7, md: 11 };
 
@@ -487,37 +506,45 @@ export default function LandingPage({ sansRedirection = false }) {
         <Box component="section" sx={{ py: RESPIRATION, bgcolor: 'craie.main' }}>
           <Container maxWidth="lg">
             <TitreSection
-              titre="Sur ordinateur et sur Android"
-              chapeau={"Le même compte, les mêmes fiches, d'un appareil à l'autre."}
+              titre="Créer son compte"
+              chapeau={'Chacun s\'inscrit depuis l\'application où il travaille. '
+                + 'Le compte ouvre ensuite les deux.'}
             />
             <Grid container spacing={{ xs: 3, md: 4 }}>
-              {[{
-                icone: <ComputerRounded />,
-                titre: 'Application web',
-                texte: 'Accessible depuis un navigateur, sur ordinateur comme sur '
-                  + 'téléphone. Connexion par mot de passe ou par compte Google.',
-              }, {
-                icone: <PhoneAndroidRounded />,
-                titre: 'Application Android',
-                texte: "Prévient par notification dès qu'une fiche est soumise, "
-                  + 'validée ou refusée — utile quand on quitte la salle sans ouvrir '
-                  + 'son ordinateur.',
-              }].map((app) => (
-                <Grid key={app.titre} size={{ xs: 12, sm: 6 }}>
-                  <Stack direction="row" spacing={2}>
-                    <Box sx={{ color: 'primary.main', mt: 0.25 }}>{app.icone}</Box>
-                    <Box>
+              {INSCRIPTIONS.map((voie) => (
+                <Grid key={voie.profil} size={{ xs: 12, md: 6 }}>
+                  <Card sx={{ height: '100%', bgcolor: 'background.paper' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.5 }}>
+                        <Box sx={{ color: 'primary.main', display: 'flex' }}>{voie.icone}</Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          {voie.support}
+                        </Typography>
+                      </Stack>
                       <Typography variant="h3" sx={{ fontSize: '1.1875rem', mb: 1 }}>
-                        {app.titre}
+                        {voie.profil}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 420 }}>
-                        {app.texte}
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        {voie.texte}
                       </Typography>
-                    </Box>
-                  </Stack>
+                    </CardContent>
+                  </Card>
                 </Grid>
               ))}
             </Grid>
+
+            <Box sx={{ mt: { xs: 4, md: 5 }, maxWidth: 720 }}>
+              <Typography variant="h3" sx={{ fontSize: '1.1875rem', mb: 1 }}>
+                Les mêmes identifiants des deux côtés
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Une fois le compte créé, il ouvre aussi bien le site que
+                l&apos;application : un enseignant inscrit sur le web se connecte sur
+                Android sans rien recommencer, et y reçoit une notification dès
+                qu&apos;une fiche le concerne. Sur le web, la connexion se fait par
+                mot de passe ou par compte Google.
+              </Typography>
+            </Box>
           </Container>
         </Box>
 
