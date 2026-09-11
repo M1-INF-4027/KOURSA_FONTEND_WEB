@@ -136,12 +136,10 @@ const INSCRIPTIONS = [
  */
 const ASSISTANCE = 'koursa@gmail.com';
 
-// Le depot de l'application mobile est prive : les fichiers attaches a une
-// release privee exigent une authentification. La version installable est donc
-// publiee sur le depot public du site, dont l'adresse ne change pas d'une
-// version a l'autre.
-const TELECHARGEMENT_ANDROID =
-  'https://github.com/M1-INF-4027/KOURSA_FONTEND_WEB/releases/latest/download/koursa.apk';
+// L'application est servie par le domaine lui-meme, depuis un dossier que le
+// deploiement du site ne remplace pas : aucun depot n'a donc besoin d'etre
+// public pour qu'elle soit telechargeable.
+const TELECHARGEMENT_ANDROID = '/telecharger/koursa.apk';
 
 /** Ecart vertical des sections, sur la trame de 8 dp de Material. */
 const RESPIRATION = { xs: 7, md: 11 };
