@@ -101,23 +101,40 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     setPwdError('');
+    if (!oldPassword) {
+      setPwdError('Saisissez votre mot de passe actuel');
+      return;
+    }
     if (newPassword !== confirmPwd) {
       setPwdError('Les mots de passe ne correspondent pas');
       return;
     }
-    if (newPassword.length < 6) {
-      setPwdError('Le mot de passe doit avoir au moins 6 caracteres');
+    // Huit caracteres : la meme exigence que le serveur. En demander six ici
+    // ne faisait qu'annoncer un refus que l'utilisateur decouvrait apres coup.
+    if (newPassword.length < 8) {
+      setPwdError('Le mot de passe doit avoir au moins 8 caracteres');
       return;
     }
     setChangingPwd(true);
     try {
-      await usersService.update(user.id, { password: newPassword });
+      // L'endpoint dedie verifie le mot de passe actuel, refuse un mot de
+      // passe egal a l'adresse email et leve l'obligation de changement
+      // imposee aux comptes crees par import. Le PATCH generique employe
+      // jusqu'ici ne faisait rien de tout cela : une session laissee ouverte
+      // suffisait a changer le mot de passe sans connaitre l'ancien.
+      await usersService.changePassword({
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
       toast.success('Mot de passe modifie');
       setOldPassword('');
       setNewPassword('');
       setConfirmPwd('');
-    } catch {
-      toast.error('Erreur changement de mot de passe');
+    } catch (err) {
+      // Le serveur dit precisement ce qui bloque — ancien mot de passe faux,
+      // mot de passe egal a l'email. Le taire obligerait a deviner.
+      const detail = err?.response?.data?.detail;
+      setPwdError(detail || 'Erreur changement de mot de passe');
     } finally {
       setChangingPwd(false);
     }
@@ -228,6 +245,16 @@ export default function ProfilePage() {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12 }}>
                   <TextField
+                    label="Mot de passe actuel"
+                    type="password"
+                    fullWidth
+                    autoComplete="current-password"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <TextField
                     label="Nouveau mot de passe"
                     type="password"
                     fullWidth
@@ -249,7 +276,7 @@ export default function ProfilePage() {
                 <Button
                   variant="contained"
                   onClick={handleChangePassword}
-                  disabled={changingPwd || !newPassword}
+                  disabled={changingPwd || !oldPassword || !newPassword}
                 >
                   {changingPwd ? <CircularProgress size={20} /> : 'Modifier le mot de passe'}
                 </Button>
