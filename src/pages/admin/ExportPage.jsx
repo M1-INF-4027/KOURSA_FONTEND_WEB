@@ -143,15 +143,17 @@ export default function AdminExportPage() {
   };
 
   // Filter filieres by selected department
-  const filteredFilieres = selectedDepartement
-    ? (recap?.filieres || []).filter((f) => {
-        // Try matching via departements list
-        const dept = departements.find((d) => d.id === Number(selectedDepartement));
-        if (!dept) return false;
-        // Check if filiere belongs to department by checking niveaux
-        return true; // filieres from recap are already scoped if departement param is sent
-      })
-    : recap?.filieres || [];
+  // Le serveur renvoie deja les filieres du departement demande : il n'y a
+  // rien a filtrer ici. Seul subsiste le garde-fou d'origine, qui n'affiche
+  // rien tant que le departement choisi est inconnu de la liste chargee.
+  const departementConnu = departements.some(
+    (d) => d.id === Number(selectedDepartement)
+  );
+  const filteredFilieres = !selectedDepartement
+    ? recap?.filieres || []
+    : departementConnu
+      ? recap?.filieres || []
+      : [];
 
   const filterLabel = [
     departements.find((d) => d.id === Number(selectedDepartement))?.nom_departement,

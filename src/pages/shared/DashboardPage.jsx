@@ -35,7 +35,7 @@ import StatsCard from '../../components/common/StatsCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
-import { fichesSuiviService, dashboardService, usersService, unitesEnseignementService, alertsService } from '../../api/services';
+import { fichesSuiviService, dashboardService, alertsService } from '../../api/services';
 import { useConfig } from '../../contexts/ConfigContext';
 import ChefChecklist from '../../components/common/ChefChecklist';
 import toast from 'react-hot-toast';
@@ -301,6 +301,8 @@ function ChefDashboard() {
     stats?.niveaux?.find((n) => n.id === Number(selectedNiveau))?.nom,
     selectedSemestre ? `S${selectedSemestre}` : null,
   ].filter(Boolean).join(' - ') || 'Tout le departement';
+
+  if (loading) return <DashboardSkeleton count={2} />;
 
   return (
     <Box className="fade-in">

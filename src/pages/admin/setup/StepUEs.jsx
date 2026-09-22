@@ -60,7 +60,6 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
   const [saving, setSaving] = useState(false);
 
   // Delete
-  const [deleteId, setDeleteId] = useState(null);
 
   const load = async () => {
     try {
@@ -194,7 +193,6 @@ export default function StepUEs({ onNext, onBack, anneeId }) {
     try {
       await unitesEnseignementService.delete(id);
       toast.success('UE supprimee');
-      setDeleteId(null);
       load();
     } catch {
       toast.error('Erreur lors de la suppression');

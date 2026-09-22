@@ -3,16 +3,19 @@ import { Card, CardContent, TextField, Skeleton } from '@mui/material';
 import { departementsService } from '../../api/services';
 
 export default function DepartmentSelector({ value, onChange, required = false, departments: externalDepts }) {
-  const [departments, setDepartments] = useState(externalDepts || []);
+  const [chargees, setChargees] = useState([]);
   const [loading, setLoading] = useState(!externalDepts);
 
+  // La liste fournie par le parent est lue telle quelle, jamais recopiee dans
+  // un etat local. La recopier obligeait a la resynchroniser dans un effet, ce
+  // qui provoquait un rendu supplementaire a chaque changement de prop et
+  // exposait les deux versions a diverger.
+  const departments = externalDepts || chargees;
+
   useEffect(() => {
-    if (externalDepts) {
-      setDepartments(externalDepts);
-      return;
-    }
+    if (externalDepts) return;
     departementsService.getAll()
-      .then((res) => setDepartments(res.data))
+      .then((res) => setChargees(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [externalDepts]);
