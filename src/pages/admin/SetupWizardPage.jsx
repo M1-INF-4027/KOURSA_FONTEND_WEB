@@ -12,7 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { configurationService, unitesEnseignementService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import StepAnnee from './setup/StepAnnee';
 import StepReconduction from './setup/StepReconduction';
 import StepStructure from './setup/StepStructure';

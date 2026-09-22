@@ -23,7 +23,7 @@ import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DepartmentSelector from '../../components/common/DepartmentSelector';
 import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService, filieresService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import toast from 'react-hot-toast';
 
 export default function UEsPage() {

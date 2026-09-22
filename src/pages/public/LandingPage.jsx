@@ -31,7 +31,7 @@ import {
   PhoneAndroidRounded,
   ScheduleRounded,
 } from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import landingTheme from './landingTheme';
 import './LandingPage.css';
 

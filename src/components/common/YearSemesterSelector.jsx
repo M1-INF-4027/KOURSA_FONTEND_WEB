@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Chip, Menu, MenuItem, CircularProgress } from '@mui/material';
 import { CalendarMonth, ArrowDropDown } from '@mui/icons-material';
 import toast from 'react-hot-toast';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import { useRoles } from '../../hooks/useRoles';
 import { configurationService } from '../../api/services';
 

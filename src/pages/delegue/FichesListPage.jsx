@@ -24,7 +24,7 @@ import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
 import { fichesSuiviService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import toast from 'react-hot-toast';
 
 const tabs = [

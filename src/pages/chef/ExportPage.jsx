@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import { dashboardService, unitesEnseignementService, usersService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import toast from 'react-hot-toast';
 
 function downloadBlob(res, fallbackName) {

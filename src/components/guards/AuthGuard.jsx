@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useConfig } from '../../hooks/useConfig';
 import { Box, CircularProgress } from '@mui/material';
 
 export default function AuthGuard() {

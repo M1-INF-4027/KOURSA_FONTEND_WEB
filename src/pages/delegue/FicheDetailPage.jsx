@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import StatusBadge from '../../components/common/StatusBadge';
 import { fichesSuiviService } from '../../api/services';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 function InfoRow({ icon, label, value }) {

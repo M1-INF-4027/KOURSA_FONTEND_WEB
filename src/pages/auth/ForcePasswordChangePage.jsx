@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { LockReset } from '@mui/icons-material';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { usersService } from '../../api/services';
 
 /**

@@ -22,7 +22,7 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
 import { fichesSuiviService, departementsService, filieresService, niveauxService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import toast from 'react-hot-toast';
 
 export default function AdminFichesPage() {

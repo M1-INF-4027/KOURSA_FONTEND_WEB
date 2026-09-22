@@ -1,8 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ConfigContext } from './config-context';
 import { configurationService } from '../api/services';
-import { useAuth } from './AuthContext';
-
-const ConfigContext = createContext(null);
+import { useAuth } from '../hooks/useAuth';
 
 export function ConfigProvider({ children }) {
   const { isAuth } = useAuth();
@@ -45,10 +44,4 @@ export function ConfigProvider({ children }) {
       {children}
     </ConfigContext.Provider>
   );
-}
-
-export function useConfig() {
-  const context = useContext(ConfigContext);
-  if (!context) throw new Error('useConfig must be used within ConfigProvider');
-  return context;
 }

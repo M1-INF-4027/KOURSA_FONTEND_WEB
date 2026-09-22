@@ -24,7 +24,7 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { anneesAcademiquesService, configurationService, usersService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import toast from 'react-hot-toast';
 
 export default function AnneesPage() {

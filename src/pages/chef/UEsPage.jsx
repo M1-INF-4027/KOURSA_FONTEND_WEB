@@ -12,8 +12,8 @@ import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { unitesEnseignementService, usersService, niveauxService, semestresService, departementsService, filieresService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useConfig } from '../../hooks/useConfig';
+import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 
 export default function ChefUEsPage() {

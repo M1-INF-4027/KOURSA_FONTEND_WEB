@@ -36,7 +36,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import { fichesSuiviService, dashboardService, alertsService } from '../../api/services';
-import { useConfig } from '../../contexts/ConfigContext';
+import { useConfig } from '../../hooks/useConfig';
 import ChefChecklist from '../../components/common/ChefChecklist';
 import toast from 'react-hot-toast';
 import banniere from '../../assets/banniere.png';
