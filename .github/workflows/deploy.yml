@@ -23,6 +23,11 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    # Une balise JSX non importee compile sans erreur et ne casse qu'a
+    # l'ouverture de la page. Rien d'autre ne l'attrape avant la production.
+    - name: Verifier les balises JSX
+      run: npm run lint:balises
+
     - name: Build
       run: npm run build
 
