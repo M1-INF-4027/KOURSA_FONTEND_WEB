@@ -11,7 +11,7 @@ import {
   Tooltip,
   Skeleton,
 } from '@mui/material';
-import { ToggleOn, ToggleOff, CheckCircle } from '@mui/icons-material';
+import { ToggleOn, ToggleOff, CheckCircle, Visibility } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';

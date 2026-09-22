@@ -20,7 +20,7 @@ import {
   Autocomplete,
   Grid,
 } from '@mui/material';
-import { Add, Edit, Delete, ToggleOn, ToggleOff, CheckCircle } from '@mui/icons-material';
+import { Add, Edit, Delete, ToggleOn, ToggleOff, CheckCircle, Visibility } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import DataTable from '../../components/common/DataTable';
 import StatusBadge from '../../components/common/StatusBadge';
