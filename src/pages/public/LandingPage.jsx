@@ -134,7 +134,7 @@ const INSCRIPTIONS = [
  * Adresse d'assistance, annoncee au pied de la page et la ou l'inscription
  * peut se bloquer : adresse non declaree, compte encore en attente.
  */
-const ASSISTANCE = 'koursa@gmail.com';
+const ASSISTANCE = 'koursaacademie@gmail.com';
 
 // L'application est servie par le domaine lui-meme, depuis un dossier que le
 // deploiement du site ne remplace pas : aucun depot n'a donc besoin d'etre
