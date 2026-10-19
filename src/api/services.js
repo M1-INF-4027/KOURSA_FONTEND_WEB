@@ -129,7 +129,12 @@ export const usersService = {
   approuverDelegue: (id) => api.post(`/users/utilisateurs/${id}/approuver-delegue/`),
   approuver: (id) => api.post(`/users/utilisateurs/${id}/approuver/`),
   register: (data) => api.post('/users/utilisateurs/', data),
+  // Declarer sa classe n'est plus une affectation immediate : la demande
+  // attend la validation du chef, et porte l'annee academique.
   changerNiveau: (niveauId) => api.post('/users/utilisateurs/changer-niveau/', { niveau_id: niveauId }),
+  mandatsEnAttente: () => api.get('/users/utilisateurs/mandats-en-attente/'),
+  approuverMandat: (id) => api.post(`/users/utilisateurs/${id}/approuver-mandat/`),
+  refuserMandat: (id, motif) => api.post(`/users/utilisateurs/${id}/refuser-mandat/`, { motif }),
   resetDatabase: (password) => api.post('/users/utilisateurs/reset-database/', { password }),
   changePassword: (data) => api.post('/users/utilisateurs/change-password/', data),
   simulerEnseignants: (file) =>

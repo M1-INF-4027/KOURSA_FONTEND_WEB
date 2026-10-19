@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
+import CarteRattachement from '../../components/common/CarteRattachement';
 import {
   Box,
   Card,
@@ -191,6 +192,7 @@ export default function ProfilePage() {
 
         {/* Edit Form */}
         <Grid size={{ xs: 12, md: 8 }}>
+          <CarteRattachement utilisateur={user} />
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>

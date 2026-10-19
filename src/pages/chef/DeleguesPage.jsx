@@ -21,6 +21,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import RoleBadge from '../../components/common/RoleBadge';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import MandatsAValider from '../../components/common/MandatsAValider';
 import { usersService } from '../../api/services';
 import toast from 'react-hot-toast';
 
@@ -96,6 +97,10 @@ export default function DeleguesPage() {
   return (
     <Box className="fade-in">
       <PageHeader title="Demandes en attente" description="Approuvez ou rejetez les demandes d'inscription des delegues et enseignants" />
+
+      {/* Les classes declarees pour l'annee en cours se valident ici, au meme
+          endroit que les inscriptions : ce sont deux etapes du meme accueil. */}
+      <MandatsAValider onChange={load} />
 
       <Card>
         <CardContent sx={{ p: 0 }}>
