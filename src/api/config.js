@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://koursa.arited.org/api';
+// L'adresse de production reste la valeur par defaut : une construction sans
+// variable d'environnement se comporte exactement comme avant. VITE_API_URL
+// permet de pointer l'application vers une pile d'essai, ce qui etait
+// impossible tant que l'adresse etait ecrite en dur.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://koursa.arited.org/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
